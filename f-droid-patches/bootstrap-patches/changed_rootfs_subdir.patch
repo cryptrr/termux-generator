@@ -1,0 +1,13 @@
+diff --git a/scripts/properties.sh b/scripts/properties.sh
+index b98c3a4..bdabb4a 100644
+--- a/scripts/properties.sh
++++ b/scripts/properties.sh
+@@ -743,7 +743,7 @@ __termux_build_props__add_variables_validator_actions "TERMUX__ROOTFS_ID" "unsig
+ #
+ # Default value: `files`
+ ##
+-TERMUX__ROOTFS_SUBDIR="files"
++TERMUX__ROOTFS_SUBDIR="files/build"
+ __termux_build_props__add_variables_validator_actions "TERMUX__ROOTFS_SUBDIR" "allow_unset_value safe_relative_path"
+ 
+ ###########
