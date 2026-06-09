@@ -1,0 +1,24 @@
+# upload this file with your repository to GitHub
+# to recompile your custom bootstrap within GitHub Actions.
+name: Build Termux bootstraps
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+      - name: Build bootstraps
+        run: |
+          scripts/free-space.sh
+          scripts/run-docker.sh sudo ln -sf "/data/data/@TERMUX_APP__PACKAGE_NAME@/aosp" /system
+          scripts/run-docker.sh @BOOTSTRAP_BUILD_COMMAND@
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4.6.0
+        with:
+          name: Termux bootstraps
+          path: |
+            ./*.zip

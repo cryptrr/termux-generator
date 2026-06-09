@@ -1,0 +1,49 @@
+diff --git a/packages/termux-tools/no-mirrors.patch b/packages/termux-tools/no-mirrors.patch
+new file mode 100644
+index 0000000..8245c43
+--- /dev/null
++++ b/packages/termux-tools/no-mirrors.patch
+@@ -0,0 +1,43 @@
++diff --git a/Makefile.am b/Makefile.am
++index 964dedf..d4fae7d 100644
++--- a/Makefile.am
+++++ b/Makefile.am
++@@ -16,7 +16,7 @@
++ # along with termux-tools.  If not, see
++ # <https://www.gnu.org/licenses/>.
++ 
++-SUBDIRS = . scripts doc mirrors motds src
+++SUBDIRS = . scripts doc motds src
++ 
++ CONFFILES = \
++ etc/motd \
++diff --git a/configure.ac b/configure.ac
++index 5735d6a..26f7d2e 100644
++--- a/configure.ac
+++++ b/configure.ac
++@@ -95,6 +95,6 @@ AC_SUBST(termux_package_manager)
++ AC_PROG_LN_S
++ 
++ AC_CONFIG_FILES([Makefile scripts/Makefile doc/Makefile
++-mirrors/Makefile motds/Makefile src/Makefile])
+++motds/Makefile src/Makefile])
++ 
++ AC_OUTPUT
++diff --git a/scripts/Makefile.am b/scripts/Makefile.am
++index 34d0fde..d1f66d1 100644
++--- a/scripts/Makefile.am
+++++ b/scripts/Makefile.am
++@@ -17,10 +17,10 @@
++ # <https://www.gnu.org/licenses/>.
++ 
++ # shell scripts:
++-bin_SCRIPTS = chsh dalvikvm login pkg su termux-backup			\
++-termux-change-repo termux-fix-shebang termux-info termux-open		\
+++bin_SCRIPTS = chsh dalvikvm login su termux-backup			\
+++termux-fix-shebang termux-info termux-open		\
++ termux-open-url termux-reload-settings termux-reset termux-restore	\
++-termux-setup-package-manager termux-setup-storage termux-wake-lock	\
+++termux-setup-storage termux-wake-lock	\
++ termux-wake-unlock
++ 
++ # wrappers around tools in /system/bin:

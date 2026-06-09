@@ -43,8 +43,8 @@ check_names() {
 }
 
 clean_docker() {
-    docker container kill termux-generator-package-builder 2> /dev/null || true
-    docker container rm -f termux-generator-package-builder 2>/dev/null || true
+    docker container kill "$TERMUX_GENERATOR_CONTAINER_NAME" 2> /dev/null || true
+    docker container rm -f "$TERMUX_GENERATOR_CONTAINER_NAME" 2>/dev/null || true
     if ! docker image rm ghcr.io/termux/package-builder 2>/dev/null; then
         echo "[*] Warning: not removing Docker package builder image for \"F-Droid\" Termux, likely because it is either not downloaded yet, or in use by other containers."
     fi
@@ -54,7 +54,7 @@ clean_docker() {
 }
 
 clean_artifacts() {
-    rm -rf termux* *.apk *.deb *.xz 2>/dev/null
+    rm -rf termux* *.apk *.deb *.xz *.zip 2>/dev/null
 }
 
 # Funktion, um Repositories herunterzuladen
@@ -69,7 +69,6 @@ download() {
         git clone --depth 1 https://github.com/termux/termux-styling.git                termux-apps-main/termux-styling
         git clone --depth 1 https://github.com/termux/termux-app.git                    termux-apps-main/termux-app
         git clone --depth 1 https://github.com/termux/termux-gui.git                    termux-apps-main/termux-gui
-        git clone --depth 1 --recursive https://github.com/termux/termux-x11.git        termux-apps-main/termux-x11
         # special case - for "F-Droid" Termux, it is necessary to move the termux-am-library subfolder of
         # the termux-am-library repository, which contains its actual code, into the termux-app folder,
         # where its code needs to be patched and compiled into the main "F-Droid" Termux APK
@@ -80,19 +79,10 @@ download() {
         git clone --depth 1 https://github.com/termux-play-store/termux-packages.git    termux-packages-main
         git clone --depth 1 https://github.com/termux-play-store/termux-apps.git        termux-apps-main
     fi
-}
-
-build_plugin() {
-    pushd "plugins/$TERMUX_GENERATOR_PLUGIN"
-
-    ./gradlew build
-
-    popd
+    git clone --depth 1 --recursive https://github.com/termux/termux-x11.git        termux-apps-main/termux-x11
 }
 
 install_plugin() {
-    mkdir -p termux-apps-main/termux-app/src/main/assets/
-    cp -rf "plugins/$TERMUX_GENERATOR_PLUGIN" termux-apps-main/termux-app/src/main/assets/
     apply_patches "plugins/$TERMUX_GENERATOR_PLUGIN/$TERMUX_APP_TYPE-patches/bootstrap-patches" termux-packages-main
     apply_patches "plugins/$TERMUX_GENERATOR_PLUGIN/$TERMUX_APP_TYPE-patches/app-patches" termux-apps-main
 }
@@ -108,6 +98,8 @@ patch_bootstraps() {
     fi
 
     apply_patches "$TERMUX_APP_TYPE-patches/bootstrap-patches" termux-packages-main
+
+    portable_sed_i -e "s|termux-package-builder|$TERMUX_GENERATOR_CONTAINER_NAME|g" termux-packages-main/scripts/run-docker.sh
 
     local bashrc="termux-packages-main/packages/bash/etc-bash.bashrc"
 
@@ -127,6 +119,12 @@ EOF
     fi
 
     cp -f "$TERMUX_GENERATOR_HOME/scripts/termux_generator_utils.sh" termux-packages-main/scripts/
+
+    # remove packages that are severely broken in ways that corrupt
+    # the container, other packages, or the boostrap second stage if they are allowed to be built
+    # I keep track of these, so contact me if you think it's time to remove one from this blocklist
+    rm -rf termux-packages-main/packages/swift # https://github.com/termux/termux-packages/issues/26246
+    rm -rf termux-packages-main/packages/zeronet # https://github.com/termux/termux-packages/pull/25367
 }
 
 # Funktion, um die App zu patchen
@@ -155,8 +153,14 @@ build_termux_x11() {
 move_termux_x11_deb() {
     pushd termux-apps-main/termux-x11
 
-    mkdir -p "$TERMUX_GENERATOR_HOME/termux-packages-main/output"
-    mv app/build/outputs/apk/debug/*.deb "$TERMUX_GENERATOR_HOME/termux-packages-main/output/termux-x11-nightly_all.deb"
+    if [[ "$TERMUX_APP_TYPE" == "f-droid" ]]; then
+        local termux_x11_dest="$TERMUX_GENERATOR_HOME/termux-packages-main/output"
+    else
+        local termux_x11_dest="$TERMUX_GENERATOR_HOME/termux-packages-main"
+    fi
+
+    mkdir -p "$termux_x11_dest"
+    mv app/build/outputs/apk/debug/*.deb "$termux_x11_dest/termux-x11-nightly_all.deb"
 
     popd
 }
@@ -191,16 +195,27 @@ build_bootstraps() {
 
     bootstrap_script_args+=" --architectures $bootstrap_architectures"
 
-    if [[ "${CI-}" != "true" ]]; then
-        scripts/run-docker.sh "scripts/$bootstrap_script" $bootstrap_script_args
-    else
-        scripts/setup-ubuntu.sh
-        scripts/setup-android-sdk.sh
+    if [[ "${CI-}" == "true" ]]; then
         scripts/free-space.sh
-        rm -f "${HOME}"/lib/ndk-*.zip "${HOME}"/lib/sdk-*.zip
-        sed -i "s|/home/builder/termux-packages|$(pwd)|g" "scripts/$bootstrap_script"
-        "scripts/$bootstrap_script" $bootstrap_script_args
     fi
+
+    # Replace symbolic link /system which is inside the termux-package-builder docker image
+    # pointed to /data/data/com.termux/aosp by default
+    # https://github.com/termux/termux-packages/blob/650907de80114cc53b20b181161f993e3ad0dfad/scripts/setup-ubuntu.sh#L371
+    # needed for building pypy and similar packages
+    scripts/run-docker.sh sudo ln -sf "/data/data/$TERMUX_APP__PACKAGE_NAME/aosp" /system
+
+    if [[ "$TERMUX_APP_TYPE" == "f-droid" && "$TERMUX_APP__PACKAGE_NAME" == "com.retired64.termux" && $bootstrap_architectures != *","* ]]; then
+        build_all_packages "$bootstrap_architectures"
+    fi
+
+    rm -rf .github/workflows/*
+    sed -e "s|@TERMUX_APP__PACKAGE_NAME@|$TERMUX_APP__PACKAGE_NAME|g" \
+        -e "s|@BOOTSTRAP_BUILD_COMMAND@|scripts/$bootstrap_script $bootstrap_script_args|g" \
+        "$TERMUX_GENERATOR_HOME/scripts/build-bootstraps.yml.in" \
+        > .github/workflows/build-bootstraps.yml
+
+    scripts/run-docker.sh "scripts/$bootstrap_script" $bootstrap_script_args
 
     popd
 }
@@ -212,8 +227,17 @@ move_bootstraps() {
     else
         local app_assets_dir="src/main/assets/"
     fi
-    mkdir -p "termux-apps-main/termux-app/$app_assets_dir"
-    mv termux-packages-main/bootstrap-*.zip "termux-apps-main/termux-app/$app_assets_dir"
+    if [ -z "${DISABLE_TERMINAL}" ]; then
+        mkdir -p "termux-apps-main/termux-app/$app_assets_dir"
+        mv termux-packages-main/bootstrap-* "termux-apps-main/termux-app/$app_assets_dir"
+        if [[ "$TERMUX_APP_TYPE" == "f-droid" ]]; then
+            mv termux-packages-main/xz-* "termux-apps-main/termux-app/$app_assets_dir"
+        fi
+    else
+        for zip in termux-packages-main/bootstrap-*; do
+            mv "$zip" "$TERMUX_APP__PACKAGE_NAME-$TERMUX_APP_TYPE-$(basename $zip)"
+        done
+    fi
 }
 
 # Funktion, um die App zu bauen
@@ -221,10 +245,36 @@ build_apps() {
     pushd termux-apps-main
 
     if [[ "$TERMUX_APP_TYPE" == "f-droid" ]]; then
-        pushd termux-app
-            ./gradlew publishReleasePublicationToMavenLocal
-        popd
+        if [ -z "${DISABLE_TERMINAL}" ]; then
+            pushd termux-app
+                ./gradlew publishReleasePublicationToMavenLocal
+            popd
+        fi
         for app in *; do
+            if [[ "$app" == "termux-app" ]] && [[ -n "${DISABLE_TERMINAL}" ]]; then
+                continue
+            fi
+            if [[ "$app" == "termux-tasker" ]] && [[ -n "${DISABLE_TASKER}" ]]; then
+                continue
+            fi
+            if [[ "$app" == "termux-float" ]] && [[ -n "${DISABLE_FLOAT}" ]]; then
+                continue
+            fi
+            if [[ "$app" == "termux-widget" ]] && [[ -n "${DISABLE_WIDGET}" ]]; then
+                continue
+            fi
+            if [[ "$app" == "termux-api" ]] && [[ -n "${DISABLE_API}" ]]; then
+                continue
+            fi
+            if [[ "$app" == "termux-boot" ]] && [[ -n "${DISABLE_BOOT}" ]]; then
+                continue
+            fi
+            if [[ "$app" == "termux-styling" ]] && [[ -n "${DISABLE_STYLING}" ]]; then
+                continue
+            fi
+            if [[ "$app" == "termux-gui" ]] && [[ -n "${DISABLE_GUI}" ]]; then
+                continue
+            fi
             if [[ "$app" == "termux-x11" ]]; then
                 continue
             fi
@@ -233,6 +283,10 @@ build_apps() {
             popd
         done
     else
+        if [[ "${CI-}" == "true" ]]; then
+            export JAVA_HOME=/usr/lib/jvm/temurin-21-jdk-amd64
+            sudo update-alternatives --set java "$JAVA_HOME/bin/java"
+        fi
         ./gradlew assembleDebug
     fi
 
@@ -247,7 +301,22 @@ move_apks() {
         local build_dir="build/outputs/apk/debug"
     fi
 
-    for apk in termux-apps-main/*/"$build_dir"/*.apk; do
-        mv "$apk" "$TERMUX_APP__PACKAGE_NAME-$TERMUX_APP_TYPE-$(basename $apk)"
-    done
+    if [ -z "${DISABLE_X11}" ]; then
+        for apk in termux-apps-main/termux-x11/app/build/outputs/apk/debug/*.apk; do
+            mv "$apk" "$TERMUX_APP__PACKAGE_NAME-$TERMUX_APP_TYPE-$(basename $apk)"
+        done
+    fi
+
+    if [[ -z "${DISABLE_TERMINAL}" ]] || \
+        [[ -z "${DISABLE_TASKER}" ]] || \
+        [[ -z "${DISABLE_FLOAT}" ]] || \
+        [[ -z "${DISABLE_WIDGET}" ]] || \
+        [[ -z "${DISABLE_API}" ]] || \
+        [[ -z "${DISABLE_BOOT}" ]] || \
+        [[ -z "${DISABLE_STYLING}" ]] || \
+        [[ -z "${DISABLE_GUI}" ]]; then
+        for apk in termux-apps-main/*/"$build_dir"/*.apk; do
+            mv "$apk" "$TERMUX_APP__PACKAGE_NAME-$TERMUX_APP_TYPE-$(basename $apk)"
+        done
+    fi
 }

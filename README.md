@@ -86,8 +86,8 @@ sudo reboot
 git clone https://github.com/robertkirkman/termux-generator.git
 cd termux-generator
 ./build-termux.sh --name a.copy.of.termux.with.the.location.changed \
-                  --add make,pkg-config,autoconf,automake,bc,bison,cmake,flex,gperf,libtool,libllvm,m4,git,golang,nodejs,patchelf,python,ruby,rust,subversion,python,proot-distro,ffmpeg \
-                  --architectures aarch64
+    --add clang,make,pkg-config,autoconf,automake,bc,bison,cmake,flex,libtool,m4,git,python-pip,proot-distro \
+    --architectures aarch64
 ```
 
 > [!IMPORTANT]
@@ -120,6 +120,16 @@ passwd # change the default password
 ```
 
 #### Example: build Termux with the location changed and XFCE preinstalled
+
+> [!TIP]
+> `--type play-store` is compatible with Termux:X11, but unlike `--type f-droid`, it doesn't currently have a second-stage bootstrap, so if using `--type play-store` with XFCE, it might be necessary to run some commands to grant executable permission manually before launching XFCE, like these:
+> 
+> ```
+> chmod +x $PREFIX/lib/xfce4/xfconf/xfconfd
+> chmod +x $PREFIX/lib/xfce4/session/xfsm-shutdown-helper
+> chmod +x $PREFIX/lib/xfce4/panel/migrate
+> chmod +x $PREFIX/lib/xfce4/notifyd/xfce4-notifyd
+> ```
 
 ```bash
 git clone https://github.com/robertkirkman/termux-generator.git

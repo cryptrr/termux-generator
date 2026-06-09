@@ -9,15 +9,6 @@
  			log "If you still want to force run it again (not recommended), \
  like in case of previous failure and it must be re-run again for testing, \
  then delete the '@TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_DIR@/@TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_ENTRY_POINT_SUBFILE@.lock' \
-@@ -198,6 +198,8 @@ run_package_postinst_maintainer_scripts() {
- 				maintscript_debug=1
- 			fi
- 
-+			find "${TERMUX_PREFIX}"/{bin,lib} \( -type f -o -type l \) -exec chmod +x {} \;
-+
- 			for script_path in "${TERMUX_PREFIX}/var/lib/dpkg/info/"*.postinst; do
- 				script_basename="${script_path##*/}"
- 				package_name="${script_basename::-9}"
 --- a/scripts/build-bootstraps.sh
 +++ b/scripts/build-bootstraps.sh
 @@ -29,6 +29,8 @@ BOOTSTRAP_ANDROID10_COMPATIBLE=false
@@ -131,120 +122,7 @@
  # Build deb files for package and its dependencies deb from source for arch
  build_package() {
  
-@@ -93,112 +192,6 @@ build_package() {
- 
- }
- 
--# Extract *.deb files to the bootstrap root.
--extract_debs() {
--
--	local package_arch="$1"
--	local current_package_name
--	local data_archive
--	local control_archive
--	local package_tmpdir
--	local deb
--	local file
--
--	cd "$TERMUX_BUILT_DEBS_DIRECTORY"
--
--	if [ -z "$(ls -A)" ]; then
--		echo $'\n\n\n'"No debs found"
--		return 1
--	else
--		echo $'\n\n\n'"Deb Files:"
--		echo "\""
--		ls
--		echo "\""
--	fi
--
--	for deb in *.deb; do
--
--		current_package_name="$(echo "$deb" | sed -E 's/^([^_]+).*/\1/' )"
--		current_package_arch="$(echo "$deb" | sed -E 's/.*_(aarch64|all|arm|i686|x86_64).deb$/\1/' )"
--		echo "current_package_name: '$current_package_name'"
--		echo "current_package_arch: '$current_package_arch'"
--
--		if [[ "$current_package_arch" != "$package_arch" ]] && [[ "$current_package_arch" != "all" ]]; then
--			echo "[*] Skipping incompatible package '$deb' for target '$package_arch'..."
--			continue
--		fi
--
--		if [[ "$current_package_name" == *"-static" ]]; then
--			echo "[*] Skipping static package '$deb'..."
--			continue
--		fi
--
--		if [[ " ${EXTRACTED_PACKAGES[*]} " == *" $current_package_name "* ]]; then
--			echo "[*] Skipping already extracted package '$current_package_name'..."
--			continue
--		fi
--
--		EXTRACTED_PACKAGES+=("$current_package_name")
--
--		package_tmpdir="${BOOTSTRAP_PKGDIR}/${current_package_name}"
--		mkdir -p "$package_tmpdir"
--		rm -rf "$package_tmpdir"/*
--
--		echo "[*] Extracting '$deb'..."
--		(cd "$package_tmpdir"
--			ar x "$TERMUX_BUILT_DEBS_DIRECTORY/$deb"
--
--			# data.tar may have extension different from .xz
--			if [ -f "./data.tar.xz" ]; then
--				data_archive="data.tar.xz"
--			elif [ -f "./data.tar.gz" ]; then
--				data_archive="data.tar.gz"
--			else
--				echo "No data.tar.* found in '$deb'."
--				return 1
--			fi
--
--			# Do same for control.tar.
--			if [ -f "./control.tar.xz" ]; then
--				control_archive="control.tar.xz"
--			elif [ -f "./control.tar.gz" ]; then
--				control_archive="control.tar.gz"
--			else
--				echo "No control.tar.* found in '$deb'."
--				return 1
--			fi
--
--			# Extract files.
--			tar xf "$data_archive" -C "$BOOTSTRAP_ROOTFS"
--
--			if ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then
--				# Register extracted files.
--				tar tf "$data_archive" | sed -E -e 's@^\./@/@' -e 's@^/$@/.@' -e 's@^([^./])@/\1@' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${current_package_name}.list"
--
--				# Generate checksums (md5).
--				tar xf "$data_archive"
--				find data -type f -print0 | xargs -0 -r md5sum | sed 's@^\.$@@g' > "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${current_package_name}.md5sums"
--
--				# Extract metadata.
--				tar xf "$control_archive"
--				{
--					cat control
--					echo "Status: install ok installed"
--					echo
--				} >> "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/status"
--
--				# Additional data: conffiles & scripts
--				for file in conffiles postinst postrm preinst prerm; do
--					if [ -f "${PWD}/${file}" ]; then
--						cp "$file" "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}/var/lib/dpkg/info/${current_package_name}.${file}"
--					fi
--				done
--			fi
--		)
--	done
--
--}
--
- # Add termux bootstrap second stage files
- add_termux_bootstrap_second_stage_files() {
- 
-@@ -218,6 +211,11 @@ add_termux_bootstrap_second_stage_files() {
+@@ -218,6 +211,12 @@ add_termux_bootstrap_second_stage_files() {
  		> "${BOOTSTRAP_ROOTFS}/${TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_DIR}/$TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_ENTRY_POINT_SUBFILE"
  	chmod 700 "${BOOTSTRAP_ROOTFS}/${TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_DIR}/$TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_ENTRY_POINT_SUBFILE"
  
@@ -252,25 +130,49 @@
 +		ln -s "$TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_ENTRY_POINT_SUBFILE" \
 +			"${BOOTSTRAP_ROOTFS}/${TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_DIR}/$TERMUX_BOOTSTRAP__BOOTSTRAP_SECOND_STAGE_ENTRY_POINT_SUBFILE.lock"
 +	fi
++	mkdir -p "${BOOTSTRAP_ROOTFS}/${TERMUX__PREFIX__PROFILE_D_DIR}"
 +
  	# TODO: Remove it when Termux app supports `pacman` bootstraps installation.
  	sed -e "s|@TERMUX_PREFIX@|${TERMUX_PREFIX}|g" \
  		-e "s|@TERMUX__PREFIX__PROFILE_D_DIR@|${TERMUX__PREFIX__PROFILE_D_DIR}|g" \
-@@ -243,7 +241,13 @@ create_bootstrap_archive() {
- 			rm -f "$link"
- 		done < <(find . -type l -print0)
+@@ -234,19 +336,27 @@ add_termux_bootstrap_second_stage_files() {
+ # Information about symlinks is stored in file SYMLINKS.txt.
+ create_bootstrap_archive() {
  
+-	echo $'\n\n\n'"[*] Creating 'bootstrap-${1}.zip'..."
++	echo $'\n\n\n'"[*] Creating 'bootstrap-${1}.tar.xz'..."
+ 	(cd "${BOOTSTRAP_ROOTFS}/${TERMUX_PREFIX}"
+-		# Do not store symlinks in bootstrap archive.
+-		# Instead, put all information to SYMLINKS.txt
+-		while read -r -d '' link; do
+-			echo "$(readlink "$link")←${link}" >> SYMLINKS.txt
+-			rm -f "$link"
+-		done < <(find . -type l -print0)
+-
 -		zip -r9 "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" ./*
-+		# in some cases this can be approximately 4% real-world size reduction of bootstrap
-+		# compared to using zip command
-+		# I observed a real 7.6 GB bootstrap containing entirely termux packages
-+		# reduce to 7.3 GB when rezipped this way.
-+		sudo apt-get update
-+		sudo apt-get install -y p7zip-full
-+		7z a "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" ./* -mfb=258 -mpass=15
++		rm -rf opt/*host-tools*
++		rm -rf opt/aosp
++		rm -rf opt/binutils*
++		rm -rf opt/glib*
++		rm -rf opt/kf6*
++		rm -rf opt/libwayland*
++		rm -rf opt/qt*
++		if [[ "$TERMUX_APP_PACKAGE" == "com.retired64.termux" ]]; then
++			rm -rf share/doc
++			rm -rf share/man
++			mkdir -p share/man
++		fi
++		XZ_OPT=-e9 tar cJf "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.tar.xz" ./*
  	)
  
- 	mv -f "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" "$TERMUX_PACKAGES_DIRECTORY/"
+-	mv -f "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.zip" "$TERMUX_PACKAGES_DIRECTORY/"
++	mv -f "${BOOTSTRAP_TMPDIR}/bootstrap-${1}.tar.xz" "$TERMUX_PACKAGES_DIRECTORY/"
++	mkdir -p "$TERMUX_PACKAGES_DIRECTORY/xz-${1}"
++	cp -f "${TERMUX_PREFIX}/bin/xz" "$TERMUX_PACKAGES_DIRECTORY/xz-${1}/xz"
++	cp -f "$(readlink -f "${TERMUX_PREFIX}/lib/liblzma.so")" "$TERMUX_PACKAGES_DIRECTORY/xz-${1}/liblzma.so.5"
+ 
+ 	echo "[*] Finished successfully (${1})."
+ 
 @@ -370,6 +374,9 @@ main() {
  					return 1
  				fi
@@ -281,27 +183,22 @@
  			-f)
  				BUILD_PACKAGE_OPTIONS+=("-f")
  				FORCE_BUILD_PACKAGES=1
-@@ -429,7 +436,10 @@ main() {
- 
- 		# Core utilities.
- 		PACKAGES+=("bash") # Used by `termux-bootstrap-second-stage.sh`
--		PACKAGES+=("bzip2")
-+		# F-Droid Termux currently has problems with fully bootstrapping subpackages.
-+		# adding them by specifying only parent packages, at the cost of a lot of space,
-+		# is the most naive workaround. there are other solutions being developed elsewhere.
-+		PACKAGES+=("libbz2")
- 		if ! ${BOOTSTRAP_ANDROID10_COMPATIBLE}; then
- 			PACKAGES+=("command-not-found")
- 		else
-@@ -480,10 +490,13 @@ main() {
+@@ -480,10 +591,20 @@ main() {
  		done
  
  		# Extract all debs.
 -		extract_debs "$TERMUX_ARCH" || return $?
-+		for pull_pkg in "${PACKAGES[@]}" termux-x11-nightly; do
++		for pull_pkg in "${PACKAGES[@]}"; do
 +			pull_package "$pull_pkg"
 +		done
 +		unset pull_pkg
++		if [ -f output/termux-x11-nightly_all.deb ]; then
++			pull_package termux-x11-nightly
++		fi
++
++		if [[ "$TERMUX_APP_PACKAGE" == "com.retired64.termux" ]]; then
++			extract_debs "$TERMUX_ARCH"
++		fi
  
  		# Add termux bootstrap second stage files
 -		add_termux_bootstrap_second_stage_files "$package_arch"
@@ -309,3 +206,16 @@
  
  		# Create bootstrap archive.
  		create_bootstrap_archive "$TERMUX_ARCH" || return $?
+--- a/packages/liblzma/build.sh
++++ b/packages/liblzma/build.sh
+@@ -15,6 +15,10 @@ TERMUX_PKG_EXTRA_CONFIGURE_ARGS="
+ --enable-sandbox=no
+ "
+ 
++termux_step_pre_configure() {
++	LDFLAGS+=" -Wl,-rpath=$TERMUX__ROOTFS"
++}
++
+ termux_step_post_massage() {
+ 	# Do not forget to bump revision of reverse dependencies and rebuild them
+ 	# after SOVERSION is changed.

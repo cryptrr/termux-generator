@@ -2,6 +2,7 @@ termux-*
 *.apk
 *.deb
 *.xz
+*.zip
 tmp
 
 # https://github.com/github/gitignore/blob/main/Gradle.gitignore
@@ -26,3 +27,7 @@ gradle-app.setting
 .project
 # JDT-specific (Eclipse Java Development Tools)
 .classpath
+
+
+# plugin specific
+plugins/gradle-project/bin
