@@ -1,0 +1,13 @@
+diff --git a/scripts/properties.sh b/scripts/properties.sh
+index d48a40a2d..35c3ecb09 100644
+--- a/scripts/properties.sh
++++ b/scripts/properties.sh
+@@ -485,7 +485,7 @@ __termux_build_props__add_variables_validator_actions "TERMUX_APP__PACKAGE_NAME"
+ #
+ # Default value: `/data/data/com.termux`
+ ##
+-TERMUX_APP__DATA_DIR="/data/data/$TERMUX_APP__PACKAGE_NAME"
++TERMUX_APP__DATA_DIR="/data/user/10/$TERMUX_APP__PACKAGE_NAME"
+ __termux_build_props__add_variables_validator_actions "TERMUX_APP__DATA_DIR" "safe_absolute_path"
+ 
+ ##
