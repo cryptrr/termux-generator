@@ -1,0 +1,110 @@
+name: Build native Termux bootstraps
+
+on:
+  workflow_dispatch:
+    inputs:
+      name:
+        description: Android application package name
+        required: true
+        type: string
+        default: com.termux
+      architectures:
+        description: Comma-separated bootstrap architectures
+        required: true
+        type: string
+        default: aarch64
+      add:
+        description: Additional comma-separated Termux packages
+        required: false
+        type: string
+        default: ""
+      bootstrap-second-stage:
+        description: Enable the bootstrap second stage
+        required: true
+        type: boolean
+        default: true
+      ssh-server:
+        description: Configure and start the SSH server automatically
+        required: true
+        type: boolean
+        default: false
+      plugin:
+        description: Optional termux-generator plugin
+        required: false
+        type: string
+        default: ""
+      force:
+        description: Force rebuilding packages
+        required: true
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-26.04
+    timeout-minutes: 360
+    env:
+      PACKAGE_NAME: ${{ inputs.name }}
+      BOOTSTRAP_ARCHITECTURES: ${{ inputs.architectures }}
+      ADDITIONAL_PACKAGES: ${{ inputs.add }}
+      BOOTSTRAP_SECOND_STAGE: ${{ inputs['bootstrap-second-stage'] }}
+      ENABLE_SSH_SERVER: ${{ inputs['ssh-server'] }}
+      TERMUX_GENERATOR_PLUGIN: ${{ inputs.plugin }}
+      FORCE_BUILD: ${{ inputs.force }}
+
+    steps:
+      - name: Check out termux-generator
+        uses: actions/checkout@v4
+
+      - name: Show runner environment
+        run: |
+          . /etc/os-release
+          echo "Runner: $PRETTY_NAME"
+          uname -a
+          df -h /
+
+      - name: Free runner disk space
+        run: |
+          sudo rm -rf /opt/ghc
+          sudo rm -rf /opt/hostedtoolcache/CodeQL
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /usr/local/.ghcup
+          sudo rm -rf /usr/local/share/boost
+          df -h /
+
+      - name: Build bootstrap archives from source
+        shell: bash
+        run: |
+          args=(
+            --name "$PACKAGE_NAME"
+            --architectures "$BOOTSTRAP_ARCHITECTURES"
+          )
+
+          if [[ -n "$ADDITIONAL_PACKAGES" ]]; then
+            args+=(--add "$ADDITIONAL_PACKAGES")
+          fi
+          if [[ "$BOOTSTRAP_SECOND_STAGE" != "true" ]]; then
+            args+=(--disable-bootstrap-second-stage)
+          fi
+          if [[ "$ENABLE_SSH_SERVER" == "true" ]]; then
+            args+=(--enable-ssh-server)
+          fi
+          if [[ -n "$TERMUX_GENERATOR_PLUGIN" ]]; then
+            args+=(--plugin "$TERMUX_GENERATOR_PLUGIN")
+          fi
+          if [[ "$FORCE_BUILD" == "true" ]]; then
+            args+=(--force)
+          fi
+
+          ./build-bootstraps-native.sh "${args[@]}"
+
+      - name: Upload bootstrap artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: termux-bootstrap-${{ inputs.name }}-${{ inputs.architectures }}
+          path: native-bootstrap-output/
+          if-no-files-found: error
+          retention-days: 14

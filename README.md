@@ -47,6 +47,12 @@ so use a disposable Ubuntu machine or VM rather than a workstation.
 Use `--reuse` to continue with the previously prepared checkout. Run
 `./build-bootstraps-native.sh --help` for all options.
 
+The **Build native Termux bootstraps** GitHub Actions workflow runs the same
+script on GitHub's Ubuntu 26.04 runner. Open the repository's Actions tab,
+select that workflow, and enter the package name, architectures, and additional
+packages. For example, use `com.autopi`, `aarch64`, and
+`python-pip,openssh,sshpass` to reproduce the equivalent local command.
+
 ### Dependencies
 
 - Docker
