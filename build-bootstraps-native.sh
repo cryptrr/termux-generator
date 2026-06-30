@@ -134,11 +134,14 @@ done
 
 # shellcheck disable=SC1091
 . /etc/os-release
-[ "${ID:-}" = "ubuntu" ] || die "This script currently supports Ubuntu only (detected '${ID:-unknown}')."
+ubuntu_lineage=" ${ID:-} ${ID_LIKE:-} "
+[[ "$ubuntu_lineage" =~ [[:space:]]ubuntu[[:space:]] ]] || \
+    die "This script currently supports Ubuntu and Ubuntu-derived distributions (detected '${ID:-unknown}')."
 [ "${EUID:-$(id -u)}" -ne 0 ] || die "Run as a normal user; the Termux setup script invokes sudo where required."
 
-if [ "$TERMUX_PACKAGES_REF" = "$DEFAULT_TERMUX_PACKAGES_REF" ] && [ -z "$SKIP_HOST_SETUP" ] && [ "${VERSION_CODENAME:-}" != "resolute" ]; then
-    die "The pinned Termux host setup targets Ubuntu 26.04 (resolute). Use that release, or provide a matching --termux-ref and setup environment."
+ubuntu_base_codename="${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}"
+if [ "$TERMUX_PACKAGES_REF" = "$DEFAULT_TERMUX_PACKAGES_REF" ] && [ -z "$SKIP_HOST_SETUP" ] && [ "$ubuntu_base_codename" != "resolute" ]; then
+    die "The pinned Termux host setup targets Ubuntu 26.04 (resolute), but '${ID:-unknown}' is based on '${ubuntu_base_codename:-unknown}'. Use a resolute-based release, or provide a matching --termux-ref and setup environment."
 fi
 
 for command in git patch file find realpath; do

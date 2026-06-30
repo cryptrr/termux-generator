@@ -25,9 +25,10 @@ This script builds a [termux/termux-app](https://github.com/termux/termux-app) o
 
 ### Building bootstraps natively without Docker
 
-Bootstrap archives can be built directly on a dedicated Ubuntu x86_64 host or
-CI runner. This path builds Termux packages from source and does not build the
-Android applications:
+Bootstrap archives can be built directly on a dedicated Ubuntu-family x86_64
+host or CI runner, including derivatives such as Pop!_OS when their Ubuntu base
+version is compatible. This path builds Termux packages from source and does not
+build the Android applications:
 
 ```bash
 ./build-bootstraps-native.sh \
