@@ -1,0 +1,289 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# This revision was verified against the patches in this repository.
+DEFAULT_TERMUX_PACKAGES_REF="f8711dbfb6a073554267e9f6291721ca60d69788"
+
+TERMUX_PACKAGES_REF="${TERMUX_PACKAGES_REF:-$DEFAULT_TERMUX_PACKAGES_REF}"
+TERMUX_APP__PACKAGE_NAME="com.termux"
+BOOTSTRAP_ARCHITECTURES="aarch64"
+ADDITIONAL_PACKAGES="xkeyboard-config"
+TERMUX_GENERATOR_PLUGIN=""
+NATIVE_WORK_DIR="${TERMUX_NATIVE_WORK_DIR:-$SCRIPT_DIR/termux-packages-native}"
+OUTPUT_DIR="${TERMUX_NATIVE_OUTPUT_DIR:-$SCRIPT_DIR/native-bootstrap-output}"
+DISABLE_BOOTSTRAP_SECOND_STAGE=""
+ENABLE_SSH_SERVER=""
+FORCE_BUILD=""
+REUSE_WORK_DIR=""
+SKIP_HOST_SETUP=""
+SKIP_ANDROID_SETUP=""
+
+show_usage() {
+    cat <<'EOF'
+Usage: build-bootstraps-native.sh [options]
+
+Build Termux bootstrap archives directly on an Ubuntu x86_64 host without
+Docker. The host setup installs system packages and creates Android-style
+paths under /data/data, so a disposable Ubuntu VM or CI runner is recommended.
+
+Options:
+  -h, --help                       Show this help.
+  -n, --name PACKAGE_NAME          Android application package name.
+  -a, --add PACKAGE_LIST           Additional comma-separated Termux packages.
+      --architectures ARCH_LIST    Comma-separated list: aarch64,arm,i686,x86_64.
+  -p, --plugin PLUGIN              Apply a plugin's F-Droid bootstrap patches.
+      --termux-ref REF             termux-packages commit or ref to fetch.
+      --work-dir DIR               Prepared termux-packages checkout.
+      --output-dir DIR             Directory for generated bootstrap artifacts.
+      --disable-bootstrap-second-stage
+                                   Disable automatic second-stage setup.
+      --enable-ssh-server          Add openssh and start sshd from bash startup.
+  -f, --force                      Force rebuilding packages.
+      --reuse                      Reuse a checkout prepared by this script.
+      --skip-host-setup            Do not run scripts/setup-ubuntu.sh.
+      --skip-android-setup         Do not run scripts/setup-android-sdk.sh.
+
+Environment overrides:
+  TERMUX_PACKAGES_REF, TERMUX_NATIVE_WORK_DIR, TERMUX_NATIVE_OUTPUT_DIR
+EOF
+}
+
+die() {
+    echo "[!] $*" >&2
+    exit 1
+}
+
+require_option_value() {
+    local option="$1"
+    local value="${2-}"
+    [ -n "$value" ] && [[ "$value" != -* ]] || die "Option '$option' requires an argument."
+}
+
+while (($# > 0)); do
+    case "$1" in
+        -h|--help)
+            show_usage
+            exit 0
+            ;;
+        -n|--name)
+            require_option_value "$1" "${2-}"
+            TERMUX_APP__PACKAGE_NAME="$2"
+            shift
+            ;;
+        -a|--add)
+            require_option_value "$1" "${2-}"
+            ADDITIONAL_PACKAGES+="${ADDITIONAL_PACKAGES:+,}$2"
+            shift
+            ;;
+        --architectures)
+            require_option_value "$1" "${2-}"
+            BOOTSTRAP_ARCHITECTURES="$2"
+            shift
+            ;;
+        -p|--plugin)
+            require_option_value "$1" "${2-}"
+            TERMUX_GENERATOR_PLUGIN="$2"
+            shift
+            ;;
+        --termux-ref)
+            require_option_value "$1" "${2-}"
+            TERMUX_PACKAGES_REF="$2"
+            shift
+            ;;
+        --work-dir)
+            require_option_value "$1" "${2-}"
+            NATIVE_WORK_DIR="$2"
+            shift
+            ;;
+        --output-dir)
+            require_option_value "$1" "${2-}"
+            OUTPUT_DIR="$2"
+            shift
+            ;;
+        --disable-bootstrap-second-stage)
+            DISABLE_BOOTSTRAP_SECOND_STAGE=1
+            ;;
+        --enable-ssh-server)
+            ENABLE_SSH_SERVER=1
+            ;;
+        -f|--force)
+            FORCE_BUILD=1
+            ;;
+        --reuse)
+            REUSE_WORK_DIR=1
+            ;;
+        --skip-host-setup)
+            SKIP_HOST_SETUP=1
+            ;;
+        --skip-android-setup)
+            SKIP_ANDROID_SETUP=1
+            ;;
+        *)
+            die "Unknown option '$1'. Run with --help for usage."
+            ;;
+    esac
+    shift
+done
+
+[ "$(uname -s)" = "Linux" ] || die "Native bootstrap builds require Linux; use an Ubuntu x86_64 VM or CI runner."
+[ "$(uname -m)" = "x86_64" ] || die "Native bootstrap builds currently require an x86_64 host."
+[ -r /etc/os-release ] || die "Unable to identify the Linux distribution."
+
+# shellcheck disable=SC1091
+. /etc/os-release
+[ "${ID:-}" = "ubuntu" ] || die "This script currently supports Ubuntu only (detected '${ID:-unknown}')."
+[ "${EUID:-$(id -u)}" -ne 0 ] || die "Run as a normal user; the Termux setup script invokes sudo where required."
+
+if [ "$TERMUX_PACKAGES_REF" = "$DEFAULT_TERMUX_PACKAGES_REF" ] && [ -z "$SKIP_HOST_SETUP" ] && [ "${VERSION_CODENAME:-}" != "resolute" ]; then
+    die "The pinned Termux host setup targets Ubuntu 26.04 (resolute). Use that release, or provide a matching --termux-ref and setup environment."
+fi
+
+for command in git patch file find realpath; do
+    command -v "$command" >/dev/null || die "Required command '$command' is not installed."
+done
+
+if [ -z "$SKIP_HOST_SETUP" ]; then
+    command -v sudo >/dev/null || die "sudo is required unless --skip-host-setup is used."
+fi
+
+if [[ "$TERMUX_APP__PACKAGE_NAME" =~ [_-] ]] || [[ ! "$TERMUX_APP__PACKAGE_NAME" =~ ^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*)+$ ]]; then
+    die "Invalid Android package name '$TERMUX_APP__PACKAGE_NAME'."
+fi
+if [[ "$TERMUX_APP__PACKAGE_NAME" == *com.termux* ]] && [ "$TERMUX_APP__PACKAGE_NAME" != "com.termux" ]; then
+    die "Custom package names must not contain 'com.termux'."
+fi
+
+case ",$BOOTSTRAP_ARCHITECTURES," in
+    *,,*) die "Architecture list must not contain empty entries." ;;
+esac
+IFS=',' read -r -a requested_architectures <<< "$BOOTSTRAP_ARCHITECTURES"
+for architecture in "${requested_architectures[@]}"; do
+    case "$architecture" in
+        aarch64|arm|i686|x86_64) ;;
+        *) die "Unsupported bootstrap architecture '$architecture'." ;;
+    esac
+done
+
+if [ -n "$TERMUX_GENERATOR_PLUGIN" ] && [ ! -d "$SCRIPT_DIR/plugins/$TERMUX_GENERATOR_PLUGIN/f-droid-patches/bootstrap-patches" ]; then
+    die "Plugin '$TERMUX_GENERATOR_PLUGIN' has no F-Droid bootstrap patches."
+fi
+
+source "$SCRIPT_DIR/scripts/termux_generator_utils.sh"
+
+PREPARED_MARKER="$NATIVE_WORK_DIR/.termux-generator-native-prepared"
+expected_marker="termux_ref=$TERMUX_PACKAGES_REF
+package_name=$TERMUX_APP__PACKAGE_NAME
+plugin=$TERMUX_GENERATOR_PLUGIN
+enable_ssh_server=$ENABLE_SSH_SERVER"
+
+prepare_checkout() {
+    [ ! -e "$NATIVE_WORK_DIR" ] || die "Work directory '$NATIVE_WORK_DIR' already exists. Use --reuse for a checkout prepared by this script."
+
+    echo "[*] Fetching termux-packages revision '$TERMUX_PACKAGES_REF'..."
+    mkdir -p "$NATIVE_WORK_DIR"
+    git -C "$NATIVE_WORK_DIR" init
+    git -C "$NATIVE_WORK_DIR" remote add origin https://github.com/termux/termux-packages.git
+    git -C "$NATIVE_WORK_DIR" fetch --depth 1 origin "$TERMUX_PACKAGES_REF"
+    git -C "$NATIVE_WORK_DIR" checkout --detach FETCH_HEAD
+
+    if [ -n "$TERMUX_GENERATOR_PLUGIN" ]; then
+        apply_patches \
+            "$SCRIPT_DIR/plugins/$TERMUX_GENERATOR_PLUGIN/f-droid-patches/bootstrap-patches" \
+            "$NATIVE_WORK_DIR"
+    fi
+
+    if [ "$TERMUX_APP__PACKAGE_NAME" != "com.termux" ]; then
+        replace_termux_name "$NATIVE_WORK_DIR" "$TERMUX_APP__PACKAGE_NAME"
+    fi
+
+    # Docker-specific fixes are intentionally excluded. native-host.patch
+    # carries only the path and toolchain changes required by a native host.
+    local patch_file
+    while IFS= read -r patch_file; do
+        [ "$(basename "$patch_file")" = "docker-fixes.patch" ] && continue
+        echo "[*] Applying $(basename "$patch_file")..."
+        patch --batch --forward -d "$NATIVE_WORK_DIR" -p1 < "$patch_file"
+    done < <(find "$SCRIPT_DIR/f-droid-patches/bootstrap-patches" -type f -name '*.patch' | sort)
+
+    echo "[*] Applying native-host.patch..."
+    patch --batch --forward -d "$NATIVE_WORK_DIR" -p1 \
+        < "$SCRIPT_DIR/native-patches/bootstrap-patches/native-host.patch"
+
+    cp -f "$SCRIPT_DIR/scripts/termux_generator_utils.sh" "$NATIVE_WORK_DIR/scripts/"
+
+    if [ -n "$ENABLE_SSH_SERVER" ]; then
+        cat <<EOF >> "$NATIVE_WORK_DIR/packages/bash/etc-bash.bashrc"
+if [ ! -f "\$HOME/.termux/boot/start-sshd" ]; then
+    mkdir -p "\$HOME/.termux/boot"
+    echo '#!/data/data/$TERMUX_APP__PACKAGE_NAME/files/usr/bin/sh' > "\$HOME/.termux/boot/start-sshd"
+    echo '. /data/data/$TERMUX_APP__PACKAGE_NAME/files/usr/etc/bash.bashrc' >> "\$HOME/.termux/boot/start-sshd"
+    chmod +x "\$HOME/.termux/boot/start-sshd"
+fi
+if [ ! -f "\$HOME/.termux_authinfo" ]; then
+    printf 'changeme\nchangeme' | passwd
+fi
+sshd
+EOF
+    fi
+
+    # Preserve the same package exclusions as the existing generator flow.
+    rm -rf "$NATIVE_WORK_DIR/packages/swift" "$NATIVE_WORK_DIR/packages/zeronet"
+
+    printf '%s\n' "$expected_marker" > "$PREPARED_MARKER"
+}
+
+if [ -e "$NATIVE_WORK_DIR" ]; then
+    [ -n "$REUSE_WORK_DIR" ] || die "Work directory '$NATIVE_WORK_DIR' already exists. Use --reuse or choose another --work-dir."
+    [ -f "$PREPARED_MARKER" ] || die "The existing work directory was not prepared by this script."
+    [ "$(cat "$PREPARED_MARKER")" = "$expected_marker" ] || die "The existing work directory was prepared with different options."
+    echo "[*] Reusing prepared checkout '$NATIVE_WORK_DIR'."
+else
+    prepare_checkout
+fi
+
+if [ -z "$SKIP_HOST_SETUP" ]; then
+    if [ ! -f "$NATIVE_WORK_DIR/.termux-generator-host-setup-complete" ]; then
+        echo "[*] Installing the native Ubuntu build environment..."
+        "$NATIVE_WORK_DIR/scripts/setup-ubuntu.sh"
+        touch "$NATIVE_WORK_DIR/.termux-generator-host-setup-complete"
+    else
+        echo "[*] Native Ubuntu build environment was already prepared."
+    fi
+fi
+
+if [ -z "$SKIP_ANDROID_SETUP" ]; then
+    echo "[*] Installing or verifying the Android SDK and NDK..."
+    "$NATIVE_WORK_DIR/scripts/setup-android-sdk.sh"
+fi
+
+if [ -n "$ENABLE_SSH_SERVER" ]; then
+    ADDITIONAL_PACKAGES+="${ADDITIONAL_PACKAGES:+,}openssh"
+fi
+
+build_args=(--architectures "$BOOTSTRAP_ARCHITECTURES")
+if [ -n "$ADDITIONAL_PACKAGES" ]; then
+    build_args+=(--add "$ADDITIONAL_PACKAGES")
+fi
+if [ -n "$DISABLE_BOOTSTRAP_SECOND_STAGE" ]; then
+    build_args+=(--disable-bootstrap-second-stage)
+fi
+if [ -n "$FORCE_BUILD" ]; then
+    build_args+=(-f)
+fi
+echo "[*] Building bootstrap architecture(s): $BOOTSTRAP_ARCHITECTURES"
+(
+    cd "$NATIVE_WORK_DIR"
+    scripts/build-bootstraps.sh "${build_args[@]}"
+)
+
+mkdir -p "$OUTPUT_DIR"
+shopt -s nullglob
+artifacts=("$NATIVE_WORK_DIR"/bootstrap-* "$NATIVE_WORK_DIR"/xz-*)
+((${#artifacts[@]} > 0)) || die "The build completed without producing bootstrap artifacts."
+cp -a "${artifacts[@]}" "$OUTPUT_DIR/"
+
+echo "[*] Native bootstrap build complete."
+echo "[*] Artifacts: $OUTPUT_DIR"

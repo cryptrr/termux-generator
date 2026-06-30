@@ -23,6 +23,29 @@ This script builds a [termux/termux-app](https://github.com/termux/termux-app) o
 
 ## Building Termux locally
 
+### Building bootstraps natively without Docker
+
+Bootstrap archives can be built directly on a dedicated Ubuntu x86_64 host or
+CI runner. This path builds Termux packages from source and does not build the
+Android applications:
+
+```bash
+./build-bootstraps-native.sh \
+    --name com.example.termux \
+    --architectures aarch64 \
+    --add python
+```
+
+The script pins a compatible `termux-packages` revision, installs the upstream
+Ubuntu and Android SDK/NDK build environments, applies the generator's F-Droid
+bootstrap patches, and writes results to `native-bootstrap-output/`. The pinned
+revision currently targets Ubuntu 26.04 (`resolute`). Host setup uses `sudo`,
+installs a large set of build dependencies, and creates paths under `/data/data`,
+so use a disposable Ubuntu machine or VM rather than a workstation.
+
+Use `--reuse` to continue with the previously prepared checkout. Run
+`./build-bootstraps-native.sh --help` for all options.
+
 ### Dependencies
 
 - Docker

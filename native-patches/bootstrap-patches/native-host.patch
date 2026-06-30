@@ -1,0 +1,40 @@
+--- a/scripts/build-bootstraps.sh
++++ b/scripts/build-bootstraps.sh
+@@ -31,7 +31,7 @@ TERMUX_ARCHITECTURES=("${TERMUX_DEFAULT_ARCHITECTURES[@]}")
+ 
+ TERMUX_PACKAGE_MANAGER="apt"
+ 
+-TERMUX_PACKAGES_DIRECTORY="/home/builder/termux-packages"
++TERMUX_PACKAGES_DIRECTORY="${TERMUX_PACKAGES_DIRECTORY:-$TERMUX_SCRIPTDIR}"
+ TERMUX_BUILT_DEBS_DIRECTORY="$TERMUX_PACKAGES_DIRECTORY/output"
+ TERMUX_BUILT_PACKAGES_DIRECTORY="/data/data/.built-packages"
+ 
+--- a/scripts/build/toolchain/termux_setup_toolchain_29.sh
++++ b/scripts/build/toolchain/termux_setup_toolchain_29.sh
+@@ -133,7 +133,7 @@ termux_setup_toolchain_29() {
+ 	[ -d "${TERMUX_STANDALONE_TOOLCHAIN}-work" ] || mkdir -p "${TERMUX_STANDALONE_TOOLCHAIN}-work"
+ 
+ 
+-	if ! mountpoint -q "${TERMUX_STANDALONE_TOOLCHAIN}"; then
++	if false; then
+ 		fuse-overlayfs \
+ 			"${TERMUX_STANDALONE_TOOLCHAIN}" \
+ 			-o lowerdir="${NDK}/toolchains/llvm/prebuilt/linux-x86_64" \
+@@ -145,12 +145,17 @@ termux_setup_toolchain_29() {
+ 		return
+ 	fi
+ 
++	rm -rf "${TERMUX_STANDALONE_TOOLCHAIN}"
++
+ 	local _NDK_ARCHNAME=$TERMUX_ARCH
+ 	if [ "$TERMUX_ARCH" = "aarch64" ]; then
+ 		_NDK_ARCHNAME=arm64
+ 	elif [ "$TERMUX_ARCH" = "i686" ]; then
+ 		_NDK_ARCHNAME=x86
+ 	fi
++	cp -a "$NDK/toolchains/llvm/prebuilt/linux-x86_64" "${TERMUX_STANDALONE_TOOLCHAIN}"
++	cp "$NDK/source.properties" "${TERMUX_STANDALONE_TOOLCHAIN}"
++
+ 	# Remove android-support header wrapping not needed on android-21:
+ 	rm -Rf $TERMUX_STANDALONE_TOOLCHAIN/sysroot/usr/local
+ 
