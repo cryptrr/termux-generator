@@ -186,6 +186,13 @@ if [[ "$TERMUX_APP__PACKAGE_NAME" == *com.termux* ]] && [ "$TERMUX_APP__PACKAGE_
     die "Custom package names must not contain 'com.termux'."
 fi
 
+if [ -n "$SKIP_HOST_SETUP" ]; then
+    native_app_data_dir="/data/data/$TERMUX_APP__PACKAGE_NAME"
+    if ! mkdir -p "$native_app_data_dir" 2>/dev/null; then
+        die "The native build requires a writable '$native_app_data_dir' so compiled packages retain their Android runtime prefix. Create it in the F-Droid recipe's sudo phase before running this script."
+    fi
+fi
+
 case ",$BOOTSTRAP_ARCHITECTURES," in
     *,,*) die "Architecture list must not contain empty entries." ;;
 esac

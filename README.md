@@ -69,7 +69,12 @@ sudo:
     curl flex gawk gettext git gperf jq libtool-bin lld llvm m4
     openjdk-17-jdk-headless pkg-config python-is-python3 python3 unzip xz-utils
     zip
+  - install -d -m 0777 /data/data/com.example.termux
 ```
+
+Replace `com.example.termux` with the package name passed to `--name`. This
+writable build prefix is necessary because compiled Termux packages embed their
+final Android `/data/data/<package-name>/files/usr` runtime path.
 
 The **Build native Termux bootstraps** GitHub Actions workflow runs the same
 script on GitHub's Ubuntu 26.04 runner. Open the repository's Actions tab,
