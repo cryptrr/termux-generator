@@ -157,9 +157,10 @@ if [ "$host_distribution_family" = "ubuntu" ] && [ "$TERMUX_PACKAGES_REF" = "$DE
 fi
 
 required_commands=(
-    ar autoconf automake awk bison clang clang++ curl cut find flex g++ gawk git gperf grep
-    gzip install java javac jq libtoolize m4 make md5sum mkdir mktemp mv patch
-    lld llvm-config perl pkg-config python python3 readlink realpath rm sed
+    ar autoconf autogen automake autopoint awk bison clang clang++ curl cut find
+    flex g++ gawk git gperf grep gzip install intltoolize java javac jq
+    libtoolize lld llvm-config m4 make md5sum mkdir mktemp msgfmt mv patch perl
+    pkg-config python python3 readlink realpath rm sed
     sha256sum sort tar tclsh tee tr unzip xargs xz yes zip
 )
 
