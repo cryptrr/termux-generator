@@ -162,7 +162,7 @@ required_commands=(
     libtoolize lld llvm-config lz4 lzip lrzip lzop m4 make md5sum mkdir mktemp
     msgfmt mv patch perl
     pkg-config python python3 readlink realpath rm sed
-    sha256sum sort tar tclsh tee tr unzip xargs xz yes zip zstd
+    sha256sum sort tar tclsh tee tr unzip xargs xsltproc xz yes zip zstd
 )
 
 check_required_commands() {

@@ -70,8 +70,8 @@ sudo:
     libtool-bin lld llvm lz4 lzip lrzip lzop m4
     libbz2-dev libffi-dev libgdbm-dev liblzma-dev libncurses-dev libreadline-dev
     libsqlite3-dev libssl-dev openjdk-17-jdk-headless perl pkg-config
-    python-is-python3 python3 tcl tk-dev unzip uuid-dev xz-utils zip zlib1g-dev
-    zstd
+    python-is-python3 python3 tcl tk-dev unzip uuid-dev xsltproc xz-utils zip
+    zlib1g-dev zstd
   - install -d -m 0777 /data/data/com.example.termux
 ```
 
