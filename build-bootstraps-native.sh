@@ -25,9 +25,10 @@ show_usage() {
     cat <<'EOF'
 Usage: build-bootstraps-native.sh [options]
 
-Build Termux bootstrap archives directly on an Ubuntu x86_64 host without
-Docker. The host setup installs system packages and creates Android-style
-paths under /data/data, so a disposable Ubuntu VM or CI runner is recommended.
+Build Termux bootstrap archives directly on a Debian or Ubuntu x86_64 host
+without Docker. The host setup installs system packages and creates
+Android-style paths under /data/data, so a disposable VM or CI runner is
+recommended.
 
 Options:
   -h, --help                       Show this help.
@@ -128,19 +129,24 @@ while (($# > 0)); do
     shift
 done
 
-[ "$(uname -s)" = "Linux" ] || die "Native bootstrap builds require Linux; use an Ubuntu x86_64 VM or CI runner."
+[ "$(uname -s)" = "Linux" ] || die "Native bootstrap builds require Linux; use a Debian or Ubuntu x86_64 VM or CI runner."
 [ "$(uname -m)" = "x86_64" ] || die "Native bootstrap builds currently require an x86_64 host."
 [ -r /etc/os-release ] || die "Unable to identify the Linux distribution."
 
 # shellcheck disable=SC1091
 . /etc/os-release
-ubuntu_lineage=" ${ID:-} ${ID_LIKE:-} "
-[[ "$ubuntu_lineage" =~ [[:space:]]ubuntu[[:space:]] ]] || \
-    die "This script currently supports Ubuntu and Ubuntu-derived distributions (detected '${ID:-unknown}')."
+distribution_lineage=" ${ID:-} ${ID_LIKE:-} "
+if [[ "$distribution_lineage" =~ [[:space:]]ubuntu[[:space:]] ]]; then
+    host_distribution_family="ubuntu"
+elif [[ "$distribution_lineage" =~ [[:space:]]debian[[:space:]] ]]; then
+    host_distribution_family="debian"
+else
+    die "This script currently supports Debian, Ubuntu, and their derivatives (detected '${ID:-unknown}')."
+fi
 [ "${EUID:-$(id -u)}" -ne 0 ] || die "Run as a normal user; the Termux setup script invokes sudo where required."
 
 ubuntu_base_codename="${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}"
-if [ "$TERMUX_PACKAGES_REF" = "$DEFAULT_TERMUX_PACKAGES_REF" ] && [ -z "$SKIP_HOST_SETUP" ] && [ "$ubuntu_base_codename" != "resolute" ]; then
+if [ "$host_distribution_family" = "ubuntu" ] && [ "$TERMUX_PACKAGES_REF" = "$DEFAULT_TERMUX_PACKAGES_REF" ] && [ -z "$SKIP_HOST_SETUP" ] && [ "$ubuntu_base_codename" != "resolute" ]; then
     die "The pinned Termux host setup targets Ubuntu 26.04 (resolute), but '${ID:-unknown}' is based on '${ubuntu_base_codename:-unknown}'. Use a resolute-based release, or provide a matching --termux-ref and setup environment."
 fi
 
@@ -249,11 +255,11 @@ fi
 
 if [ -z "$SKIP_HOST_SETUP" ]; then
     if [ ! -f "$NATIVE_WORK_DIR/.termux-generator-host-setup-complete" ]; then
-        echo "[*] Installing the native Ubuntu build environment..."
+        echo "[*] Installing the native Debian/Ubuntu build environment..."
         "$NATIVE_WORK_DIR/scripts/setup-ubuntu.sh"
         touch "$NATIVE_WORK_DIR/.termux-generator-host-setup-complete"
     else
-        echo "[*] Native Ubuntu build environment was already prepared."
+        echo "[*] Native Debian/Ubuntu build environment was already prepared."
     fi
 fi
 
