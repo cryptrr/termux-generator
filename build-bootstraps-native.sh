@@ -20,6 +20,7 @@ FORCE_BUILD=""
 REUSE_WORK_DIR=""
 SKIP_HOST_SETUP=""
 SKIP_ANDROID_SETUP=""
+USE_ISOLATED_ANDROID_ENVIRONMENT=""
 
 show_usage() {
     cat <<'EOF'
@@ -147,6 +148,7 @@ fi
 if [ -z "$SKIP_HOST_SETUP" ] && [ "${EUID:-$(id -u)}" -ne 0 ] && ! command -v sudo >/dev/null; then
     echo "[*] sudo is unavailable; using the runner-provided host environment."
     SKIP_HOST_SETUP=1
+    USE_ISOLATED_ANDROID_ENVIRONMENT=1
 fi
 
 ubuntu_base_codename="${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}"
@@ -283,6 +285,11 @@ if [ -z "$SKIP_HOST_SETUP" ]; then
 fi
 
 check_required_commands "${required_commands[@]}"
+
+if [ -n "$USE_ISOLATED_ANDROID_ENVIRONMENT" ]; then
+    echo "[*] Ignoring the runner SDK/NDK paths; using pinned tools in the build user's home."
+    unset ANDROID_HOME ANDROID_SDK_ROOT NDK
+fi
 
 if [ -z "$SKIP_ANDROID_SETUP" ]; then
     echo "[*] Installing or verifying the Android SDK and NDK..."
