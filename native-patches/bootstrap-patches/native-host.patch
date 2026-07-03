@@ -7,7 +7,8 @@
 -TERMUX_PACKAGES_DIRECTORY="/home/builder/termux-packages"
 +TERMUX_PACKAGES_DIRECTORY="${TERMUX_PACKAGES_DIRECTORY:-$TERMUX_SCRIPTDIR}"
  TERMUX_BUILT_DEBS_DIRECTORY="$TERMUX_PACKAGES_DIRECTORY/output"
- TERMUX_BUILT_PACKAGES_DIRECTORY="/data/data/.built-packages"
+-TERMUX_BUILT_PACKAGES_DIRECTORY="/data/data/.built-packages"
++TERMUX_BUILT_PACKAGES_DIRECTORY="${TERMUX_BUILT_PACKAGES_DIRECTORY:-$TERMUX_PACKAGES_DIRECTORY/.built-packages}"
  
 --- a/scripts/build/toolchain/termux_setup_toolchain_29.sh
 +++ b/scripts/build/toolchain/termux_setup_toolchain_29.sh

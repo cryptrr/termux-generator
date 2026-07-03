@@ -48,6 +48,22 @@ uses `sudo`, installs a large set of build dependencies, and creates paths under
 Use `--reuse` to continue with the previously prepared checkout. Run
 `./build-bootstraps-native.sh --help` for all options.
 
+On an unprivileged F-Droid runner where `sudo` is unavailable, host setup is
+skipped automatically and the runner-provided build tools are validated before
+the checkout is prepared. Missing Debian packages must be installed by the
+recipe's privileged `sudo:` phase. Build caches remain inside the writable
+checkout; the script does not require write access to `/data/data`.
+
+A minimal F-Droid recipe setup for Debian runners is:
+
+```yaml
+sudo:
+  - apt-get update
+  - apt-get install -y autoconf automake autopoint bison build-essential curl
+    flex gawk gettext git gperf libtool-bin m4 openjdk-17-jdk-headless pkg-config
+    python-is-python3 python3 unzip xz-utils zip
+```
+
 The **Build native Termux bootstraps** GitHub Actions workflow runs the same
 script on GitHub's Ubuntu 26.04 runner. Open the repository's Actions tab,
 select that workflow, and enter the package name, architectures, and additional

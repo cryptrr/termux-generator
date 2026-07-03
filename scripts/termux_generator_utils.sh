@@ -31,16 +31,21 @@ replace_termux_name() {
 
     pushd "$targetdir"
     
-    # Nur Textdateien bearbeiten, um Fehler zu vermeiden
+    # Limit replacements to tracked text files. Using git instead of the host
+    # `file` utility keeps this usable in minimal, unprivileged build runners.
     local file
-    find . -type f -exec file {} + | grep "text" | cut -d: -f1 | while read -r file; do
-        portable_sed_i -e "s|>Termux<|>$replacement_name<|g" \
+    while IFS= read -r -d '' file; do
+        LC_ALL=C portable_sed_i -e "s|>Termux<|>$replacement_name<|g" \
                        -e "s|\"Termux\"|\"$replacement_name\"|g" \
                        -e "s|Termux:|$replacement_name:|g" \
                        -e "s|com\.termux|$replacement_name|g" \
                        -e "s|com_termux|$replacement_name_underscore|g" \
                        -e '/http/!s|com/termux|'$replacement_name_slash'|g' "$file"
-    done
+    done < <(git grep -Ilz \
+        -e 'Termux' \
+        -e 'com\.termux' \
+        -e 'com_termux' \
+        -e 'com/termux')
 
     popd
 }

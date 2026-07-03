@@ -143,33 +143,39 @@ elif [[ "$distribution_lineage" =~ [[:space:]]debian[[:space:]] ]]; then
 else
     die "This script currently supports Debian, Ubuntu, and their derivatives (detected '${ID:-unknown}')."
 fi
-[ "${EUID:-$(id -u)}" -ne 0 ] || die "Run as a normal user; the Termux setup script invokes sudo where required."
+
+if [ -z "$SKIP_HOST_SETUP" ] && [ "${EUID:-$(id -u)}" -ne 0 ] && ! command -v sudo >/dev/null; then
+    echo "[*] sudo is unavailable; using the runner-provided host environment."
+    SKIP_HOST_SETUP=1
+fi
 
 ubuntu_base_codename="${UBUNTU_CODENAME:-${VERSION_CODENAME:-}}"
 if [ "$host_distribution_family" = "ubuntu" ] && [ "$TERMUX_PACKAGES_REF" = "$DEFAULT_TERMUX_PACKAGES_REF" ] && [ -z "$SKIP_HOST_SETUP" ] && [ "$ubuntu_base_codename" != "resolute" ]; then
     die "The pinned Termux host setup targets Ubuntu 26.04 (resolute), but '${ID:-unknown}' is based on '${ubuntu_base_codename:-unknown}'. Use a resolute-based release, or provide a matching --termux-ref and setup environment."
 fi
 
-if [ -z "$SKIP_HOST_SETUP" ]; then
-    command -v sudo >/dev/null || die "sudo is required unless --skip-host-setup is used."
+required_commands=(
+    ar autoconf automake awk bison curl cut find flex g++ gawk git gperf grep
+    gzip install java javac libtoolize m4 make md5sum mkdir mktemp mv patch
+    pkg-config python python3 readlink realpath rm sed sha256sum sort tar tee tr unzip
+    xargs xz yes zip
+)
 
-    bootstrap_packages=()
-    command -v git >/dev/null || bootstrap_packages+=(git)
-    command -v patch >/dev/null || bootstrap_packages+=(patch)
-    command -v file >/dev/null || bootstrap_packages+=(file)
-    command -v find >/dev/null || bootstrap_packages+=(findutils)
-    command -v realpath >/dev/null || bootstrap_packages+=(coreutils)
+check_required_commands() {
+    local command
+    local -a missing_commands=()
+    for command in "$@"; do
+        command -v "$command" >/dev/null || missing_commands+=("$command")
+    done
+    ((${#missing_commands[@]} == 0)) || \
+        die "Missing host build commands: ${missing_commands[*]}. Install the corresponding Debian build dependencies in the F-Droid recipe's sudo phase, or enable host setup on a host with sudo."
+}
 
-    if ((${#bootstrap_packages[@]} > 0)); then
-        echo "[*] Installing host setup prerequisites: ${bootstrap_packages[*]}"
-        sudo apt-get update
-        sudo apt-get install -y "${bootstrap_packages[@]}"
-    fi
+if [ -n "$SKIP_HOST_SETUP" ]; then
+    check_required_commands "${required_commands[@]}"
+else
+    check_required_commands find git grep patch realpath sed sort
 fi
-
-for command in git patch file find realpath; do
-    command -v "$command" >/dev/null || die "Required command '$command' is not installed."
-done
 
 if [[ "$TERMUX_APP__PACKAGE_NAME" =~ [_-] ]] || [[ ! "$TERMUX_APP__PACKAGE_NAME" =~ ^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*)+$ ]]; then
     die "Invalid Android package name '$TERMUX_APP__PACKAGE_NAME'."
@@ -275,6 +281,8 @@ if [ -z "$SKIP_HOST_SETUP" ]; then
         echo "[*] Native Debian/Ubuntu build environment was already prepared."
     fi
 fi
+
+check_required_commands "${required_commands[@]}"
 
 if [ -z "$SKIP_ANDROID_SETUP" ]; then
     echo "[*] Installing or verifying the Android SDK and NDK..."
