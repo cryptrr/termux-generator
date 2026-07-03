@@ -67,8 +67,8 @@ sudo:
   - apt-get update
   - apt-get install -y autoconf automake autopoint bison build-essential clang
     curl flex gawk gettext git gperf jq libtool-bin lld llvm m4
-    openjdk-17-jdk-headless pkg-config python-is-python3 python3 unzip xz-utils
-    zip
+    openjdk-17-jdk-headless perl pkg-config python-is-python3 python3 tcl unzip
+    xz-utils zip
   - install -d -m 0777 /data/data/com.example.termux
 ```
 
