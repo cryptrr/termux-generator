@@ -67,10 +67,11 @@ sudo:
   - apt-get update
   - apt-get install -y autoconf autoconf-archive autogen automake autopoint bison
     build-essential clang curl flex gawk gettext git gperf intltool jq
-    libtool-bin lld llvm m4
+    libtool-bin lld llvm lz4 lzip lrzip lzop m4
     libbz2-dev libffi-dev libgdbm-dev liblzma-dev libncurses-dev libreadline-dev
     libsqlite3-dev libssl-dev openjdk-17-jdk-headless perl pkg-config
     python-is-python3 python3 tcl tk-dev unzip uuid-dev xz-utils zip zlib1g-dev
+    zstd
   - install -d -m 0777 /data/data/com.example.termux
 ```
 
