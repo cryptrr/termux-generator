@@ -150,13 +150,26 @@ if [ "$host_distribution_family" = "ubuntu" ] && [ "$TERMUX_PACKAGES_REF" = "$DE
     die "The pinned Termux host setup targets Ubuntu 26.04 (resolute), but '${ID:-unknown}' is based on '${ubuntu_base_codename:-unknown}'. Use a resolute-based release, or provide a matching --termux-ref and setup environment."
 fi
 
+if [ -z "$SKIP_HOST_SETUP" ]; then
+    command -v sudo >/dev/null || die "sudo is required unless --skip-host-setup is used."
+
+    bootstrap_packages=()
+    command -v git >/dev/null || bootstrap_packages+=(git)
+    command -v patch >/dev/null || bootstrap_packages+=(patch)
+    command -v file >/dev/null || bootstrap_packages+=(file)
+    command -v find >/dev/null || bootstrap_packages+=(findutils)
+    command -v realpath >/dev/null || bootstrap_packages+=(coreutils)
+
+    if ((${#bootstrap_packages[@]} > 0)); then
+        echo "[*] Installing host setup prerequisites: ${bootstrap_packages[*]}"
+        sudo apt-get update
+        sudo apt-get install -y "${bootstrap_packages[@]}"
+    fi
+fi
+
 for command in git patch file find realpath; do
     command -v "$command" >/dev/null || die "Required command '$command' is not installed."
 done
-
-if [ -z "$SKIP_HOST_SETUP" ]; then
-    command -v sudo >/dev/null || die "sudo is required unless --skip-host-setup is used."
-fi
 
 if [[ "$TERMUX_APP__PACKAGE_NAME" =~ [_-] ]] || [[ ! "$TERMUX_APP__PACKAGE_NAME" =~ ^[A-Za-z][A-Za-z0-9]*(\.[A-Za-z][A-Za-z0-9]*)+$ ]]; then
     die "Invalid Android package name '$TERMUX_APP__PACKAGE_NAME'."
