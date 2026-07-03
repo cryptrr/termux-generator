@@ -157,7 +157,7 @@ if [ "$host_distribution_family" = "ubuntu" ] && [ "$TERMUX_PACKAGES_REF" = "$DE
 fi
 
 required_commands=(
-    ar autoconf autogen automake autopoint awk bison clang clang++ curl cut find
+    aclocal ar autoconf autogen automake autopoint awk bison clang clang++ curl cut find
     flex g++ gawk git gperf grep gzip install intltoolize java javac jq
     libtoolize lld llvm-config m4 make md5sum mkdir mktemp msgfmt mv patch perl
     pkg-config python python3 readlink realpath rm sed
@@ -176,6 +176,9 @@ check_required_commands() {
 
 if [ -n "$SKIP_HOST_SETUP" ]; then
     check_required_commands "${required_commands[@]}"
+    autoconf_macro_dir="$(aclocal --print-ac-dir)"
+    [ -f "$autoconf_macro_dir/ax_c_float_words_bigendian.m4" ] || \
+        die "Missing AX_C_FLOAT_WORDS_BIGENDIAN macro. Install Debian package 'autoconf-archive' in the F-Droid recipe's sudo phase."
 else
     check_required_commands find git grep patch realpath sed sort
 fi
