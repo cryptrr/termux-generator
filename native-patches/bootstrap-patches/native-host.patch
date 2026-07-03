@@ -15,6 +15,10 @@
 @@ -5 +5 @@ termux_step_handle_buildarch() {
 -	local TERMUX_ARCH_FILE=/data/TERMUX_ARCH
 +	local TERMUX_ARCH_FILE="${TERMUX_TOPDIR}/TERMUX_ARCH"
+@@ -33 +33,2 @@ termux_step_handle_buildarch() {
+-	echo "$TERMUX_ARCH" > $TERMUX_ARCH_FILE
++	mkdir -p "$TERMUX_TOPDIR"
++	echo "$TERMUX_ARCH" > "$TERMUX_ARCH_FILE"
 
 --- a/scripts/build/termux_step_setup_variables.sh
 +++ b/scripts/build/termux_step_setup_variables.sh
