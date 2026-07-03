@@ -55,15 +55,19 @@ recipe's privileged `sudo:` phase. Build caches remain inside the writable
 checkout; the script does not require write access to `/data/data`. Inherited
 runner SDK/NDK paths are ignored in this mode, allowing the exact pinned Android
 tools to be installed under the build user's writable home directory.
+The Java home is detected from the runner's actual `javac` executable instead
+of assuming Ubuntu's JVM installation path. The host LLVM path and major version
+are likewise detected from the runner's `clang` executable.
 
 A minimal F-Droid recipe setup for Debian runners is:
 
 ```yaml
 sudo:
   - apt-get update
-  - apt-get install -y autoconf automake autopoint bison build-essential curl
-    flex gawk gettext git gperf jq libtool-bin m4 openjdk-17-jdk-headless
-    pkg-config python-is-python3 python3 unzip xz-utils zip
+  - apt-get install -y autoconf automake autopoint bison build-essential clang
+    curl flex gawk gettext git gperf jq libtool-bin lld llvm m4
+    openjdk-17-jdk-headless pkg-config python-is-python3 python3 unzip xz-utils
+    zip
 ```
 
 The **Build native Termux bootstraps** GitHub Actions workflow runs the same

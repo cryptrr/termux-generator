@@ -157,10 +157,10 @@ if [ "$host_distribution_family" = "ubuntu" ] && [ "$TERMUX_PACKAGES_REF" = "$DE
 fi
 
 required_commands=(
-    ar autoconf automake awk bison curl cut find flex g++ gawk git gperf grep
+    ar autoconf automake awk bison clang clang++ curl cut find flex g++ gawk git gperf grep
     gzip install java javac jq libtoolize m4 make md5sum mkdir mktemp mv patch
-    pkg-config python python3 readlink realpath rm sed sha256sum sort tar tee tr unzip
-    xargs xz yes zip
+    lld llvm-config pkg-config python python3 readlink realpath rm sed sha256sum
+    sort tar tee tr unzip xargs xz yes zip
 )
 
 check_required_commands() {
@@ -285,6 +285,24 @@ if [ -z "$SKIP_HOST_SETUP" ]; then
 fi
 
 check_required_commands "${required_commands[@]}"
+
+if [ -z "${TERMUX_JAVA_HOME:-}" ] || [ ! -x "$TERMUX_JAVA_HOME/bin/javac" ]; then
+    javac_path="$(realpath "$(command -v javac)")"
+    TERMUX_JAVA_HOME="$(dirname "$(dirname "$javac_path")")"
+    export TERMUX_JAVA_HOME
+fi
+echo "[*] Using Java home: $TERMUX_JAVA_HOME"
+
+if [ -z "${TERMUX_HOST_LLVM_BASE_DIR:-}" ] || [ ! -x "$TERMUX_HOST_LLVM_BASE_DIR/bin/clang" ]; then
+    clang_path="$(realpath "$(command -v clang)")"
+    TERMUX_HOST_LLVM_BASE_DIR="$(dirname "$(dirname "$clang_path")")"
+    export TERMUX_HOST_LLVM_BASE_DIR
+fi
+if [ -z "${TERMUX_HOST_LLVM_MAJOR_VERSION:-}" ]; then
+    TERMUX_HOST_LLVM_MAJOR_VERSION="$(clang -dumpversion | cut -d. -f1)"
+    export TERMUX_HOST_LLVM_MAJOR_VERSION
+fi
+echo "[*] Using host LLVM: $TERMUX_HOST_LLVM_BASE_DIR (version $TERMUX_HOST_LLVM_MAJOR_VERSION)"
 
 if [ -n "$USE_ISOLATED_ANDROID_ENVIRONMENT" ]; then
     echo "[*] Ignoring the runner SDK/NDK paths; using pinned tools in the build user's home."
