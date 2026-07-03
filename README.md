@@ -60,8 +60,8 @@ A minimal F-Droid recipe setup for Debian runners is:
 sudo:
   - apt-get update
   - apt-get install -y autoconf automake autopoint bison build-essential curl
-    flex gawk gettext git gperf libtool-bin m4 openjdk-17-jdk-headless pkg-config
-    python-is-python3 python3 unzip xz-utils zip
+    flex gawk gettext git gperf jq libtool-bin m4 openjdk-17-jdk-headless
+    pkg-config python-is-python3 python3 unzip xz-utils zip
 ```
 
 The **Build native Termux bootstraps** GitHub Actions workflow runs the same

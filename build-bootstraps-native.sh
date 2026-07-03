@@ -156,7 +156,7 @@ fi
 
 required_commands=(
     ar autoconf automake awk bison curl cut find flex g++ gawk git gperf grep
-    gzip install java javac libtoolize m4 make md5sum mkdir mktemp mv patch
+    gzip install java javac jq libtoolize m4 make md5sum mkdir mktemp mv patch
     pkg-config python python3 readlink realpath rm sed sha256sum sort tar tee tr unzip
     xargs xz yes zip
 )
