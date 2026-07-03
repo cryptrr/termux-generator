@@ -1,0 +1,13 @@
+--- a/packages/libsqlite/build.sh
++++ b/packages/libsqlite/build.sh
+@@ -42,6 +42,10 @@ termux_step_configure() {
+ 	"$TERMUX_PKG_SRCDIR"/configure \
+ 		--prefix="$TERMUX_PREFIX" \
+ 		$TERMUX_PKG_EXTRA_CONFIGURE_ARGS
++
++	# Use host tclsh for code generation, but link the Android Tcl stubs.
++	# SQLite otherwise selects the host tclConfig.sh from --with-tclsh.
++	sed -i "s|^TCL_CONFIG_SH = .*|TCL_CONFIG_SH = $TCL_CONFIG_SH|" Makefile
+ }
+ 
+ termux_step_make_install() {
