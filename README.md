@@ -66,7 +66,7 @@ A minimal F-Droid recipe setup for Debian runners is:
 sudo:
   - apt-get update
   - apt-get install -y autoconf autoconf-archive autogen automake autopoint bison
-    build-essential clang curl flex gawk gettext git gperf intltool jq
+    build-essential clang curl doxygen flex gawk gettext git gperf intltool jq
     libtool-bin lld llvm lz4 lzip lrzip lzop m4
     libbz2-dev libffi-dev libgdbm-dev liblzma-dev libncurses-dev libreadline-dev
     libsqlite3-dev libssl-dev openjdk-17-jdk-headless perl pkg-config

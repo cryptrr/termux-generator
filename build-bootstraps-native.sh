@@ -158,7 +158,7 @@ fi
 
 required_commands=(
     aclocal ar autoconf autogen automake autopoint awk bison clang clang++ curl cut find
-    flex g++ gawk git gperf grep gzip install intltoolize java javac jq
+    doxygen flex g++ gawk git gperf grep gzip install intltoolize java javac jq
     libtoolize lld llvm-config lz4 lzip lrzip lzop m4 make md5sum mkdir mktemp
     msgfmt mv patch perl
     pkg-config python python3 readlink realpath rm sed
@@ -343,6 +343,7 @@ fi
 echo "[*] Building bootstrap architecture(s): $BOOTSTRAP_ARCHITECTURES"
 (
     cd "$NATIVE_WORK_DIR"
+    export TERMUX_GENERATOR_NATIVE_BUILD=true
     scripts/build-bootstraps.sh "${build_args[@]}"
 )
 

@@ -1,0 +1,22 @@
+--- a/packages/libxml2/build.sh
++++ b/packages/libxml2/build.sh
+@@ -38,13 +38,16 @@ TERMUX_PKG_REPLACES="libxml2-dev"
+ 
+ termux_step_host_build() {
+ 	if [[ "$TERMUX_ON_DEVICE_BUILD" == "false" ]]; then
+-		# We need doxygen, other packages are it's dependencies
+-		termux_download_ubuntu_packages doxygen libfmt10 libspdlog1.15 libxapian30
++		if [[ "${TERMUX_GENERATOR_NATIVE_BUILD:-false}" != "true" ]]; then
++			# We need doxygen, other packages are its dependencies.
++			termux_download_ubuntu_packages doxygen libfmt10 libspdlog1.15 libxapian30
++		fi
+ 	fi
+ }
+ 
+ termux_step_configure() {
+-	if [[ "$TERMUX_ON_DEVICE_BUILD" == "false" ]]; then
++	if [[ "$TERMUX_ON_DEVICE_BUILD" == "false" && \
++			"${TERMUX_GENERATOR_NATIVE_BUILD:-false}" != "true" ]]; then
+ 		export LD_LIBRARY_PATH="$TERMUX_PKG_HOSTBUILD_DIR/ubuntu_packages/usr/lib/x86_64-linux-gnu"
+ 		export PATH="$TERMUX_PKG_HOSTBUILD_DIR/ubuntu_packages/usr/bin:$PATH"
+ 	fi
