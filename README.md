@@ -52,9 +52,10 @@ On an unprivileged F-Droid runner where `sudo` is unavailable, host setup is
 skipped automatically and the runner-provided build tools are validated before
 the checkout is prepared. Missing Debian packages must be installed by the
 recipe's privileged `sudo:` phase. Build caches remain inside the writable
-checkout; the script does not require write access to `/data/data`. Inherited
-runner SDK/NDK paths are ignored in this mode, allowing the exact pinned Android
-tools to be installed under the build user's writable home directory.
+checkout, including architecture state and per-package build markers; the
+script does not require write access to `/data`. Inherited runner SDK/NDK paths
+are ignored in this mode, allowing the exact pinned Android tools to be installed
+under the build user's writable home directory.
 The Java home is detected from the runner's actual `javac` executable instead
 of assuming Ubuntu's JVM installation path. The host LLVM path and major version
 are likewise detected from the runner's `clang` executable.

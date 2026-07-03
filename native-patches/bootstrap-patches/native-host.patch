@@ -10,6 +10,18 @@
 -TERMUX_BUILT_PACKAGES_DIRECTORY="/data/data/.built-packages"
 +TERMUX_BUILT_PACKAGES_DIRECTORY="${TERMUX_BUILT_PACKAGES_DIRECTORY:-$TERMUX_PACKAGES_DIRECTORY/.built-packages}"
  
+--- a/scripts/build/termux_step_handle_buildarch.sh
++++ b/scripts/build/termux_step_handle_buildarch.sh
+@@ -5 +5 @@ termux_step_handle_buildarch() {
+-	local TERMUX_ARCH_FILE=/data/TERMUX_ARCH
++	local TERMUX_ARCH_FILE="${TERMUX_TOPDIR}/TERMUX_ARCH"
+
+--- a/scripts/build/termux_step_setup_variables.sh
++++ b/scripts/build/termux_step_setup_variables.sh
+@@ -62 +62 @@ termux_step_setup_variables() {
+-		TERMUX_BUILT_PACKAGES_DIRECTORY="/data/data/.built-packages"
++		TERMUX_BUILT_PACKAGES_DIRECTORY="${TERMUX_TOPDIR}/.built-packages"
+
 --- a/scripts/build/toolchain/termux_setup_toolchain_29.sh
 +++ b/scripts/build/toolchain/termux_setup_toolchain_29.sh
 @@ -133,7 +133,7 @@ termux_setup_toolchain_29() {
