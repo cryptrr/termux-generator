@@ -56,9 +56,10 @@ checkout, including architecture state and per-package build markers; the
 script does not require write access to `/data`. Inherited runner SDK/NDK paths
 are ignored in this mode, allowing the exact pinned Android tools to be installed
 under the build user's writable home directory.
-The Java home is detected from the runner's actual `javac` executable instead
-of assuming Ubuntu's JVM installation path. The host LLVM path and major version
-are likewise detected from the runner's `clang` executable.
+Java 17 is used from the host when available. On Debian releases such as Trixie,
+where OpenJDK 17 is no longer packaged, the script downloads the pinned OpenJDK
+17.0.2 archive from `download.java.net` and verifies its SHA-256 checksum. The
+host LLVM path and major version are detected from the runner's `clang` executable.
 
 A minimal F-Droid recipe setup for Debian runners is:
 
@@ -69,7 +70,7 @@ sudo:
     build-essential clang curl docbook-xml docbook-xsl doxygen flex gawk gettext
     git gperf intltool jq libtool-bin lld llvm lz4 lzip lrzip lzop m4
     libbz2-dev libffi-dev libgdbm-dev liblzma-dev libncurses-dev libreadline-dev
-    libsqlite3-dev libssl-dev libxml2-utils openjdk-17-jdk-headless perl pkg-config
+    libsqlite3-dev libssl-dev libxml2-utils perl pkg-config
     python-is-python3 python3 tcl tk-dev triehash unzip uuid-dev xsltproc xz-utils
     zip zlib1g-dev zstd
   - install -d -m 0777 /data/data/com.example.termux
@@ -97,8 +98,11 @@ packages. For example, use `com.autopi`, `aarch64`, and
 #### Common Dependencies
 ```bash
 sudo apt update
-sudo apt install -y openjdk-17-jdk git patch
+sudo apt install -y git patch
 ```
+
+The native builder installs its pinned Java 17 fallback automatically. Docker
+users should continue to provide OpenJDK 17 in their image.
 
 #### Android SDK (Ubuntu 20.04 and 22.04)
 

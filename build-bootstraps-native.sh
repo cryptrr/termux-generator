@@ -6,6 +6,8 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # This revision was verified against the patches in this repository.
 DEFAULT_TERMUX_PACKAGES_REF="f8711dbfb6a073554267e9f6291721ca60d69788"
+PINNED_JDK17_URL="https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_linux-x64_bin.tar.gz"
+PINNED_JDK17_SHA256="0022753d0cceecacdd3a795dd4cea2bd7ffdf9dc06e22ffd1be98411742fbb44"
 
 TERMUX_PACKAGES_REF="${TERMUX_PACKAGES_REF:-$DEFAULT_TERMUX_PACKAGES_REF}"
 TERMUX_APP__PACKAGE_NAME="com.termux"
@@ -49,7 +51,8 @@ Options:
       --skip-android-setup         Do not run scripts/setup-android-sdk.sh.
 
 Environment overrides:
-  TERMUX_PACKAGES_REF, TERMUX_NATIVE_WORK_DIR, TERMUX_NATIVE_OUTPUT_DIR
+  TERMUX_PACKAGES_REF, TERMUX_NATIVE_WORK_DIR, TERMUX_NATIVE_OUTPUT_DIR,
+  TERMUX_NATIVE_JAVA_HOME
 EOF
 }
 
@@ -158,7 +161,7 @@ fi
 
 required_commands=(
     aclocal ar autoconf autogen automake autopoint awk bison clang clang++ curl cut find
-    doxygen flex g++ gawk git gperf grep gzip install intltoolize java javac jq
+    doxygen flex g++ gawk git gperf grep gzip install intltoolize jq
     libtoolize lld llvm-config lz4 lzip lrzip lzop m4 make md5sum mkdir mktemp
     msgfmt mv patch perl
     pkg-config python python3 readlink realpath rm sed
@@ -299,7 +302,8 @@ fi
 
 check_required_commands "${required_commands[@]}"
 
-if [ -z "${TERMUX_JAVA_HOME:-}" ] || [ ! -x "$TERMUX_JAVA_HOME/bin/javac" ] || \
+TERMUX_JAVA_HOME="${TERMUX_NATIVE_JAVA_HOME:-${TERMUX_JAVA_HOME:-}}"
+if [ -z "$TERMUX_JAVA_HOME" ] || [ ! -x "$TERMUX_JAVA_HOME/bin/javac" ] || \
         [[ "$("$TERMUX_JAVA_HOME/bin/javac" -version 2>&1)" != "javac 17"* ]]; then
     TERMUX_JAVA_HOME=""
     for java_home_candidate in \
@@ -312,12 +316,26 @@ if [ -z "${TERMUX_JAVA_HOME:-}" ] || [ ! -x "$TERMUX_JAVA_HOME/bin/javac" ] || \
     done
 fi
 if [ -z "$TERMUX_JAVA_HOME" ]; then
-    javac_path="$(realpath "$(command -v javac)")"
-    TERMUX_JAVA_HOME="$(dirname "$(dirname "$javac_path")")"
+    TERMUX_JAVA_HOME="$HOME/lib/termux-generator-openjdk-17.0.2"
+    if [ ! -x "$TERMUX_JAVA_HOME/bin/javac" ] || \
+            [[ "$("$TERMUX_JAVA_HOME/bin/javac" -version 2>&1)" != "javac 17"* ]]; then
+        jdk_archive="$TERMUX_JAVA_HOME.tar.gz"
+        jdk_download="$jdk_archive.download"
+        echo "[*] Java 17 is unavailable from the host; downloading pinned OpenJDK 17.0.2..."
+        mkdir -p "$(dirname "$TERMUX_JAVA_HOME")"
+        rm -f "$jdk_download"
+        curl --fail --location --retry 5 --retry-delay 2 \
+            --output "$jdk_download" "$PINNED_JDK17_URL"
+        echo "$PINNED_JDK17_SHA256  $jdk_download" | sha256sum --check -
+        rm -rf "$TERMUX_JAVA_HOME"
+        mkdir -p "$TERMUX_JAVA_HOME"
+        tar -xzf "$jdk_download" --strip-components=1 -C "$TERMUX_JAVA_HOME"
+        mv "$jdk_download" "$jdk_archive"
+    fi
 fi
 java_version="$("$TERMUX_JAVA_HOME/bin/javac" -version 2>&1)"
 [[ "$java_version" == "javac 17"* ]] || \
-    die "Java 17 is required by the pinned Android D8 toolchain (found '$java_version' at '$TERMUX_JAVA_HOME'). Install openjdk-17-jdk-headless."
+    die "Java 17 is required by the pinned Android D8 toolchain (found '$java_version' at '$TERMUX_JAVA_HOME')."
 export TERMUX_JAVA_HOME
 echo "[*] Using Java home: $TERMUX_JAVA_HOME"
 
