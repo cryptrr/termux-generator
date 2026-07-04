@@ -68,7 +68,7 @@ sudo:
   - apt-get update
   - apt-get install -y autoconf autoconf-archive autogen automake autopoint bison
     build-essential clang curl docbook-xml docbook-xsl doxygen flex gawk gettext
-    git gperf intltool jq libtool-bin lld llvm lz4 lzip lrzip lzop m4
+    git gperf gtk-doc-tools intltool jq libtool-bin lld llvm lz4 lzip lrzip lzop m4
     libbz2-dev libffi-dev libgdbm-dev liblzma-dev libncurses-dev libreadline-dev
     libsqlite3-dev libssl-dev libxml2-utils perl pkg-config
     python-is-python3 python3 tcl tk-dev triehash unzip uuid-dev xsltproc xz-utils
