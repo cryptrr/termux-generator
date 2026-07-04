@@ -163,7 +163,7 @@ required_commands=(
     aclocal ar autoconf autogen automake autopoint awk bison clang clang++ curl cut find
     doxygen flex g++ gawk git gperf grep gtkdocize gzip install intltoolize jq
     libtoolize lld llvm-config lz4 lzip lrzip lzop m4 make md5sum mkdir mktemp
-    msgfmt mv patch perl
+    msgfmt mv pandoc patch perl
     pkg-config python python3 readlink realpath rm sed
     sha256sum sort tar tclsh tee tr triehash unzip xargs xmlcatalog xsltproc xz
     yes zip zstd
