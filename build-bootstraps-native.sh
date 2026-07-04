@@ -165,7 +165,7 @@ required_commands=(
     libtoolize lld llvm-config lz4 lzip lrzip lzop m4 make md5sum mkdir mktemp
     msgfmt mv pandoc patch perl po4a-translate
     pkg-config python python3 readlink realpath rm sed
-    sha256sum sort tar tclsh tee tr triehash unzip xargs xmlcatalog xsltproc xz
+    sha256sum soelim sort tar tclsh tee tr triehash unzip xargs xmlcatalog xsltproc xz
     yes zip zstd
 )
 
