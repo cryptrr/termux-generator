@@ -41,11 +41,25 @@ replace_termux_name() {
                        -e "s|com\.termux|$replacement_name|g" \
                        -e "s|com_termux|$replacement_name_underscore|g" \
                        -e '/http/!s|com/termux|'$replacement_name_slash'|g' "$file"
-    done < <(git grep -Ilz \
-        -e 'Termux' \
-        -e 'com\.termux' \
-        -e 'com_termux' \
-        -e 'com/termux')
+    done < <(
+        if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+            git grep -Ilz \
+                -e 'Termux' \
+                -e 'com\.termux' \
+                -e 'com_termux' \
+                -e 'com/termux'
+        else
+            while IFS= read -r -d '' candidate; do
+                if grep -Iq \
+                    -e 'Termux' \
+                    -e 'com\.termux' \
+                    -e 'com_termux' \
+                    -e 'com/termux' "$candidate"; then
+                    printf '%s\0' "$candidate"
+                fi
+            done < <(find . -type f -print0)
+        fi
+    )
 
     popd
 }

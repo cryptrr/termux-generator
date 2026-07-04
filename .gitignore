@@ -1,4 +1,4 @@
-termux-*
+/termux-*
 /native-bootstrap-output/
 *.apk
 *.deb
