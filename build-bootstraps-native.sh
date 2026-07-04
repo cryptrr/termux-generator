@@ -299,11 +299,26 @@ fi
 
 check_required_commands "${required_commands[@]}"
 
-if [ -z "${TERMUX_JAVA_HOME:-}" ] || [ ! -x "$TERMUX_JAVA_HOME/bin/javac" ]; then
+if [ -z "${TERMUX_JAVA_HOME:-}" ] || [ ! -x "$TERMUX_JAVA_HOME/bin/javac" ] || \
+        [[ "$("$TERMUX_JAVA_HOME/bin/javac" -version 2>&1)" != "javac 17"* ]]; then
+    TERMUX_JAVA_HOME=""
+    for java_home_candidate in \
+            /usr/lib/jvm/java-17-openjdk-* \
+            /usr/lib/jvm/java-1.17.0-openjdk-*; do
+        if [ -x "$java_home_candidate/bin/javac" ]; then
+            TERMUX_JAVA_HOME="$java_home_candidate"
+            break
+        fi
+    done
+fi
+if [ -z "$TERMUX_JAVA_HOME" ]; then
     javac_path="$(realpath "$(command -v javac)")"
     TERMUX_JAVA_HOME="$(dirname "$(dirname "$javac_path")")"
-    export TERMUX_JAVA_HOME
 fi
+java_version="$("$TERMUX_JAVA_HOME/bin/javac" -version 2>&1)"
+[[ "$java_version" == "javac 17"* ]] || \
+    die "Java 17 is required by the pinned Android D8 toolchain (found '$java_version' at '$TERMUX_JAVA_HOME'). Install openjdk-17-jdk-headless."
+export TERMUX_JAVA_HOME
 echo "[*] Using Java home: $TERMUX_JAVA_HOME"
 
 if [ -z "${TERMUX_HOST_LLVM_BASE_DIR:-}" ] || [ ! -x "$TERMUX_HOST_LLVM_BASE_DIR/bin/clang" ]; then
