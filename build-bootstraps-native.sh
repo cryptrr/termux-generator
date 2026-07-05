@@ -184,6 +184,8 @@ if [ -n "$SKIP_HOST_SETUP" ]; then
     autoconf_macro_dir="$(aclocal --print-ac-dir)"
     [ -f "$autoconf_macro_dir/ax_c_float_words_bigendian.m4" ] || \
         die "Missing AX_C_FLOAT_WORDS_BIGENDIAN macro. Install Debian package 'autoconf-archive' in the F-Droid recipe's sudo phase."
+    pkg-config --exists libzstd || \
+        die "Missing host pkg-config module 'libzstd'. Install Debian package 'libzstd-dev' in the F-Droid recipe's sudo phase."
 else
     check_required_commands find git grep patch realpath sed sort
 fi
