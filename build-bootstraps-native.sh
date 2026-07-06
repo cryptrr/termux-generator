@@ -176,7 +176,7 @@ check_required_commands() {
         command -v "$command" >/dev/null || missing_commands+=("$command")
     done
     ((${#missing_commands[@]} == 0)) || \
-        die "Missing host build commands: ${missing_commands[*]}. Install the corresponding Debian build dependencies in the F-Droid recipe's sudo phase, or enable host setup on a host with sudo."
+        die "Missing host build commands: ${missing_commands[*]}. Install the corresponding build dependencies before using --skip-host-setup, or enable host setup on a host with sudo."
 }
 
 if [ -n "$SKIP_HOST_SETUP" ]; then
@@ -301,8 +301,6 @@ if [ -z "$SKIP_HOST_SETUP" ]; then
         echo "[*] Native Debian/Ubuntu build environment was already prepared."
     fi
 fi
-
-check_required_commands "${required_commands[@]}"
 
 TERMUX_JAVA_HOME="${TERMUX_NATIVE_JAVA_HOME:-${TERMUX_JAVA_HOME:-}}"
 if [ -z "$TERMUX_JAVA_HOME" ] || [ ! -x "$TERMUX_JAVA_HOME/bin/javac" ] || \
