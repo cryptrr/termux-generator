@@ -55,3 +55,14 @@
  	# Remove android-support header wrapping not needed on android-21:
  	rm -Rf $TERMUX_STANDALONE_TOOLCHAIN/sysroot/usr/local
  
+--- a/scripts/build/toolchain/termux_setup_toolchain_29.sh
++++ b/scripts/build/toolchain/termux_setup_toolchain_29.sh
+@@ -76,0 +77,8 @@ termux_setup_toolchain_29() {
++	# Native builders use different checkout and home directories. Exclude
++	# those host-specific paths and the derived build ID from target binaries.
++	CFLAGS+=" -g0 -ffile-prefix-map=${TERMUX_TOPDIR}=."
++	CFLAGS+=" -fdebug-prefix-map=${TERMUX_TOPDIR}=. -fmacro-prefix-map=${TERMUX_TOPDIR}=."
++	CFLAGS+=" -ffile-prefix-map=${TERMUX_SCRIPTDIR}=."
++	CFLAGS+=" -fdebug-prefix-map=${TERMUX_SCRIPTDIR}=. -fmacro-prefix-map=${TERMUX_SCRIPTDIR}=."
++	LDFLAGS+=" -Wl,--build-id=none"
++

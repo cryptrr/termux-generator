@@ -42,6 +42,8 @@ Debian/Ubuntu and Android SDK/NDK build environments, applies the generator's
 shared bootstrap patches, and writes results to `native-bootstrap-output/`.
 Debian/F-Droid host-compatibility patches are applied only on Debian-family
 hosts; Ubuntu retains the upstream package build behavior.
+Native target binaries omit debug information, host build paths, and GNU build
+IDs so checkout and home-directory differences do not change their contents.
 The pinned revision requires Ubuntu 26.04 (`resolute`) on Ubuntu-family hosts;
 Debian-family hosts are accepted independently of Ubuntu codenames. Host setup
 uses `sudo`, installs a large set of build dependencies, and creates paths under

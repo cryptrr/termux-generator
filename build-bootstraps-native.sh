@@ -226,6 +226,7 @@ expected_marker="termux_ref=$TERMUX_PACKAGES_REF
 package_name=$TERMUX_APP__PACKAGE_NAME
 plugin=$TERMUX_GENERATOR_PLUGIN
 host_family=$host_distribution_family
+reproducible_native_flags=1
 enable_ssh_server=$ENABLE_SSH_SERVER"
 
 prepare_checkout() {
