@@ -225,6 +225,7 @@ PREPARED_MARKER="$NATIVE_WORK_DIR/.termux-generator-native-prepared"
 expected_marker="termux_ref=$TERMUX_PACKAGES_REF
 package_name=$TERMUX_APP__PACKAGE_NAME
 plugin=$TERMUX_GENERATOR_PLUGIN
+host_family=$host_distribution_family
 enable_ssh_server=$ENABLE_SSH_SERVER"
 
 prepare_checkout() {
@@ -251,8 +252,18 @@ prepare_checkout() {
     # carries only the path and toolchain changes required by a native host.
     local patch_file
     while IFS= read -r patch_file; do
-        [ "$(basename "$patch_file")" = "docker-fixes.patch" ] && continue
-        echo "[*] Applying $(basename "$patch_file")..."
+        local patch_name
+        patch_name="$(basename "$patch_file")"
+        [ "$patch_name" = "docker-fixes.patch" ] && continue
+        if [ "$host_distribution_family" = "ubuntu" ]; then
+            case "$patch_name" in
+                less-gnu-mirror.patch|libsqlite-target-tcl.patch|libxml2-native-doxygen.patch|termux-am-java-home.patch)
+                    echo "[*] Skipping Debian/F-Droid-only patch $patch_name on Ubuntu."
+                    continue
+                    ;;
+            esac
+        fi
+        echo "[*] Applying $patch_name..."
         patch --batch --forward -d "$NATIVE_WORK_DIR" -p1 < "$patch_file"
     done < <(find "$SCRIPT_DIR/f-droid-patches/bootstrap-patches" -type f -name '*.patch' | sort)
 
@@ -377,7 +388,11 @@ fi
 echo "[*] Building bootstrap architecture(s): $BOOTSTRAP_ARCHITECTURES"
 (
     cd "$NATIVE_WORK_DIR"
-    export TERMUX_GENERATOR_NATIVE_BUILD=true
+    if [ "$host_distribution_family" = "debian" ]; then
+        export TERMUX_GENERATOR_NATIVE_BUILD=true
+    else
+        unset TERMUX_GENERATOR_NATIVE_BUILD
+    fi
     scripts/build-bootstraps.sh "${build_args[@]}"
 )
 
