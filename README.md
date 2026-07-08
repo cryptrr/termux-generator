@@ -58,8 +58,9 @@ the checkout is prepared. Missing Debian packages must be installed by the
 recipe's privileged `sudo:` phase. Build caches remain inside the writable
 checkout, including architecture state and per-package build markers; the
 script does not require write access to `/data`. Inherited runner SDK/NDK paths
-are ignored in this mode, allowing the exact pinned Android tools to be installed
-under the build user's writable home directory.
+are ignored in this mode, including when `--skip-host-setup` is supplied
+explicitly, allowing the exact pinned Android tools to be installed under the
+build user's writable home directory.
 Java 17 is used from the host when available. On Debian releases such as Trixie,
 where OpenJDK 17 is no longer packaged, the script downloads the pinned OpenJDK
 17.0.2 archive from `download.java.net` and verifies its SHA-256 checksum. The

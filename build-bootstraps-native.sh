@@ -151,6 +151,8 @@ fi
 if [ -z "$SKIP_HOST_SETUP" ] && [ "${EUID:-$(id -u)}" -ne 0 ] && ! command -v sudo >/dev/null; then
     echo "[*] sudo is unavailable; using the runner-provided host environment."
     SKIP_HOST_SETUP=1
+fi
+if [ -n "$SKIP_HOST_SETUP" ]; then
     USE_ISOLATED_ANDROID_ENVIRONMENT=1
 fi
 
