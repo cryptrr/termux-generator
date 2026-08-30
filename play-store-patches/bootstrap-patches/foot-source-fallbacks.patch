@@ -13,5 +13,5 @@
 +)
 +TERMUX_PKG_SHA256=d1e1d04cd7a3a1615b4d8dbf9645b9a35cdc3f36fba4e1c0fd252ad0bd6651c8
  TERMUX_PKG_AUTO_UPDATE=true
- TERMUX_PKG_DEPENDS="libandroid-support, fontconfig, freetype, libfcft, libpixman, libwayland, libxkbcommon, utf8proc"
+ TERMUX_PKG_DEPENDS="fontconfig, freetype, libfcft, libpixman, libwayland, libxkbcommon, utf8proc"
  TERMUX_PKG_BUILD_DEPENDS="libtllist, libwayland-protocols, libwayland-cross-scanner, scdoc, xdg-utils"
