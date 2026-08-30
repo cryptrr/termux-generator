@@ -1,0 +1,123 @@
+diff --git a/scripts/build/termux_download.sh b/scripts/build/termux_download.sh
+index b3205cd3da..1d69ad03a6 100755
+--- a/scripts/build/termux_download.sh
++++ b/scripts/build/termux_download.sh
+@@ -8,6 +8,38 @@ termux_download() {
+ 	local URL="$1"
+ 	local DESTINATION="$2"
+ 	local CHECKSUM="${3:-SKIP_CHECKSUM}"
++	local -a URLS=("$URL")
++	if [[ "$URL" == "${TERMUX_PKG_SRCURL-}" ]] && \
++			declare -p TERMUX_PKG_SRCURL_FALLBACKS &>/dev/null; then
++		URLS+=("${TERMUX_PKG_SRCURL_FALLBACKS[@]}")
++	fi
++
++	# Public GNU download endpoints occasionally return transient gateway errors.
++	# Keep package recipes authoritative, but try an equivalent mirror after the
++	# recipe URL and its normal retries have been exhausted.
++	case "$URL" in
++		https://ftpmirror.gnu.org/gnu/*)
++			URLS+=("https://ftp.gnu.org/gnu/${URL#https://ftpmirror.gnu.org/gnu/}")
++			;;
++		https://ftpmirror.gnu.org/*)
++			URLS+=("https://ftp.gnu.org/gnu/${URL#https://ftpmirror.gnu.org/}")
++			;;
++		https://ftp.gnu.org/gnu/*|http://ftp.gnu.org/gnu/*)
++			URLS+=("https://ftpmirror.gnu.org/${URL#*://ftp.gnu.org/gnu/}")
++			;;
++		https://www.gnu.org/software/*|http://www.gnu.org/software/*)
++			URLS+=("https://ftp.gnu.org/gnu/${URL#*://www.gnu.org/software/}")
++			;;
++		https://download.savannah.gnu.org/releases/*|http://download.savannah.gnu.org/releases/*)
++			URLS+=("http://download-mirror.savannah.gnu.org/releases/${URL#*://download.savannah.gnu.org/releases/}")
++			;;
++		https://download-mirror.savannah.gnu.org/releases/*|http://download-mirror.savannah.gnu.org/releases/*)
++			URLS+=("https://download.savannah.gnu.org/releases/${URL#*://download-mirror.savannah.gnu.org/releases/}")
++			;;
++		http://codeberg.org/*)
++			URLS+=("https://codeberg.org/${URL#http://codeberg.org/}")
++			;;
++	esac
+ 
+ 	if [[ "$URL" =~ ^file://(/[^/]+)+$ ]]; then
+ 		local source="${URL:7}" # Remove `file://` prefix
+@@ -51,40 +83,47 @@ termux_download() {
+ 		CURL_OPTIONS+=(--no-progress-meter) # Don't print out transfer statistics
+ 	fi
+ 
+-	echo "Downloading ${URL}"
+-	if ! curl "${CURL_OPTIONS[@]}" --output "$TMPFILE" "$URL"; then
+-		local error=1
+-		local retry=2
+-		local delay=60
+-		local try
+-		for (( try=1; try <= retry; try++ )); do
+-			echo "Retrying #${try} download ${URL} in ${delay}"
+-			sleep "${delay}"
+-			if curl "${CURL_OPTIONS[@]}" --output "$TMPFILE" "$URL"; then
+-				error=0
+-				break
+-			fi
+-		done
+-		if [[ "${error}" != 0 ]]; then
+-			echo "Failed to download $URL" 1>&2
+-			return 1
++	local candidate
++	for candidate in "${URLS[@]}"; do
++		echo "Downloading ${candidate}"
++		local error=0
++		if ! curl "${CURL_OPTIONS[@]}" --output "$TMPFILE" "$candidate"; then
++			error=1
++			local retry=2
++			local delay=60
++			local try
++			for (( try=1; try <= retry; try++ )); do
++				echo "Retrying #${try} download ${candidate} in ${delay}"
++				sleep "${delay}"
++				if curl "${CURL_OPTIONS[@]}" --output "$TMPFILE" "$candidate"; then
++					error=0
++					break
++				fi
++			done
++		fi
++		if [[ "$error" != 0 ]]; then
++			echo "Failed to download $candidate" 1>&2
++			continue
+ 		fi
+-	fi
+ 
+-	local ACTUAL_CHECKSUM
+-	ACTUAL_CHECKSUM=$(sha256sum "$TMPFILE" | cut -d' ' -f1)
+-	if [[ -z "$CHECKSUM" ]]; then
+-		printf "WARNING: No checksum check for %s:\nActual: %s\n" \
+-			"$URL" "$ACTUAL_CHECKSUM"
+-	elif [[ "$CHECKSUM" == "SKIP_CHECKSUM" ]]; then
+-		:
+-	elif [[ "$CHECKSUM" != "$ACTUAL_CHECKSUM" ]]; then
+-		printf "Wrong checksum for %s\nExpected: %s\nActual:   %s\n" \
+-			"$URL" "$CHECKSUM" "$ACTUAL_CHECKSUM" 1>&2
+-		return 1
+-	fi
+-	mv "$TMPFILE" "$DESTINATION"
+-	return 0
++		local ACTUAL_CHECKSUM
++		ACTUAL_CHECKSUM=$(sha256sum "$TMPFILE" | cut -d' ' -f1)
++		if [[ -z "$CHECKSUM" ]]; then
++			printf "WARNING: No checksum check for %s:\nActual: %s\n" \
++				"$candidate" "$ACTUAL_CHECKSUM"
++		elif [[ "$CHECKSUM" == "SKIP_CHECKSUM" ]]; then
++			:
++		elif [[ "$CHECKSUM" != "$ACTUAL_CHECKSUM" ]]; then
++			printf "Wrong checksum for %s\nExpected: %s\nActual:   %s\n" \
++				"$candidate" "$CHECKSUM" "$ACTUAL_CHECKSUM" 1>&2
++			continue
++		fi
++		mv "$TMPFILE" "$DESTINATION"
++		return 0
++	done
++
++	echo "Failed to download $URL from all configured sources" 1>&2
++	return 1
+ }
+ 
+ # Make script standalone executable as well as sourceable
