@@ -2,7 +2,7 @@ diff --git a/scripts/build/termux_download.sh b/scripts/build/termux_download.sh
 index b3205cd3da..1d69ad03a6 100755
 --- a/scripts/build/termux_download.sh
 +++ b/scripts/build/termux_download.sh
-@@ -8,6 +8,38 @@ termux_download() {
+@@ -8,6 +8,44 @@ termux_download() {
  	local URL="$1"
  	local DESTINATION="$2"
  	local CHECKSUM="${3:-SKIP_CHECKSUM}"
@@ -37,11 +37,17 @@ index b3205cd3da..1d69ad03a6 100755
 +		http://codeberg.org/*)
 +			URLS+=("https://codeberg.org/${URL#http://codeberg.org/}")
 +			;;
++		https://kerberos.org/dist/*|http://kerberos.org/dist/*)
++			URLS+=("https://web.mit.edu/kerberos/dist/${URL#*://kerberos.org/dist/}")
++			;;
++		https://web.mit.edu/kerberos/dist/*|http://web.mit.edu/kerberos/dist/*)
++			URLS+=("https://kerberos.org/dist/${URL#*://web.mit.edu/kerberos/dist/}")
++			;;
 +	esac
  
  	if [[ "$URL" =~ ^file://(/[^/]+)+$ ]]; then
  		local source="${URL:7}" # Remove `file://` prefix
-@@ -51,40 +83,47 @@ termux_download() {
+@@ -51,40 +89,47 @@ termux_download() {
  		CURL_OPTIONS+=(--no-progress-meter) # Don't print out transfer statistics
  	fi
  
