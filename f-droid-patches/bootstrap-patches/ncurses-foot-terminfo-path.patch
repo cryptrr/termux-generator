@@ -1,0 +1,14 @@
+--- a/packages/ncurses/build.sh
++++ b/packages/ncurses/build.sh
+@@ -136,6 +136,10 @@ termux_step_post_make_install() {
+ 
+ 	# Upstream instructions for building foot's terminfo
+ 	# See: https://codeberg.org/dnkl/foot/src/branch/master/INSTALL.md#terminfo
+-	sed 's/@default_terminfo@/foot/g' "$TERMUX_PKG_SRCDIR/foot/foot.info" | \
++	local foot_srcdir="$TERMUX_PKG_SRCDIR/foot"
++	if [[ ! -f "$foot_srcdir/foot.info" ]]; then
++		foot_srcdir="$TERMUX_PKG_SRCDIR/foot-${TERMUX_PKG_VERSION[4]}"
++	fi
++	sed 's/@default_terminfo@/foot/g' "$foot_srcdir/foot.info" | \
+ 	tic -x -e foot,foot-direct -o "$TI" -
+ }
