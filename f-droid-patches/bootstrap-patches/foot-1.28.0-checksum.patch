@@ -3,15 +3,15 @@
 @@ -3,8 +3,12 @@ TERMUX_PKG_DESCRIPTION="Fast, lightweight and minimalistic Wayland terminal emu
  TERMUX_PKG_LICENSE="MIT"
  TERMUX_PKG_MAINTAINER="@termux"
- TERMUX_PKG_VERSION="1.27.0"
--TERMUX_PKG_SRCURL=https://codeberg.org/dnkl/foot/archive/${TERMUX_PKG_VERSION}.tar.gz
--TERMUX_PKG_SHA256=4e6131cc859ec6a36569f1978cf3617cc3836a681d13d228ded1b4885dab7770
-+_FOOT_SOURCE_SHA512=fb8845b84bd25d65043bf3452e7eb4f17561465713251b06259dff02dec9e8ca177c3efaeaf64533b4922738da06277ae08fa1790f25e25f28f89ab8fabf7873
+ TERMUX_PKG_VERSION="1.28.0"
+-TERMUX_PKG_SRCURL="https://codeberg.org/dnkl/foot/archive/${TERMUX_PKG_VERSION}.tar.gz"
+-TERMUX_PKG_SHA256=4296be402b5684d049534598e69db92b918f92beac9dab76b585207045f0b037
++_FOOT_SOURCE_SHA512=7ca9cf5a980d728f3fe4a37a56ba12bdbc0373598ba30ffad1b93041514621c4d4e3fb44837ea120fde9685b33130bbcba8d151b44389d776f08cc4c12fafbe7
 +TERMUX_PKG_SRCURL=https://src.fedoraproject.org/repo/pkgs/foot/foot-${TERMUX_PKG_VERSION}.tar.gz/sha512/${_FOOT_SOURCE_SHA512}/foot-${TERMUX_PKG_VERSION}.tar.gz
 +TERMUX_PKG_SRCURL_FALLBACKS=(
 +	https://codeberg.org/dnkl/foot/releases/download/${TERMUX_PKG_VERSION}/foot-${TERMUX_PKG_VERSION}.tar.gz
 +)
-+TERMUX_PKG_SHA256=d1e1d04cd7a3a1615b4d8dbf9645b9a35cdc3f36fba4e1c0fd252ad0bd6651c8
++TERMUX_PKG_SHA256=ee73c292a4b457004b38c2df178eac025ab0b849fdd9e13253c1f8b5cf110710
  TERMUX_PKG_AUTO_UPDATE=true
  TERMUX_PKG_DEPENDS="libandroid-support, fontconfig, freetype, libfcft, libpixman, libwayland, libxkbcommon, utf8proc"
  TERMUX_PKG_BUILD_DEPENDS="libtllist, libwayland-protocols, libwayland-cross-scanner, scdoc, xdg-utils"

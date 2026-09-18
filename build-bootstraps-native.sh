@@ -5,7 +5,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # This revision was verified against the patches in this repository.
-DEFAULT_TERMUX_PACKAGES_REF="f8711dbfb6a073554267e9f6291721ca60d69788"
+DEFAULT_TERMUX_PACKAGES_REF="3206baeade4c4b0457e8ccb8e10eb506a67971df"
 PINNED_JDK17_URL="https://download.java.net/java/GA/jdk17.0.2/dfd4a8d0985749f896bed50d7138ee7f/8/GPL/openjdk-17.0.2_linux-x64_bin.tar.gz"
 PINNED_JDK17_SHA256="0022753d0cceecacdd3a795dd4cea2bd7ffdf9dc06e22ffd1be98411742fbb44"
 
