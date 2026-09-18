@@ -1,0 +1,42 @@
+diff --git a/scripts/build/termux_download_ubuntu_packages.sh b/scripts/build/termux_download_ubuntu_packages.sh
+index e89b630..e5ee96e 100755
+--- a/scripts/build/termux_download_ubuntu_packages.sh
++++ b/scripts/build/termux_download_ubuntu_packages.sh
+@@ -11,7 +11,7 @@ termux_download_ubuntu_packages() {
+ 			echo "DESTINATION    [\$TERMUX_PKG_HOSTBUILD_DIR/ubuntu_packages]"
+ 			echo "ARCHITECTURE   [amd64]"
+ 			echo "MIRROR_URL     [https://archive.ubuntu.com/ubuntu]"
+-			echo "UBUNTU_RELEASE [noble] # latest Ubuntu LTS"
++			echo "UBUNTU_RELEASE [resolute] # latest Ubuntu LTS"
+ 			return 1
+ 		}
+ 
+@@ -26,7 +26,7 @@ termux_download_ubuntu_packages() {
+ 	: "${DESTINATION:="$TERMUX_PKG_HOSTBUILD_DIR/ubuntu_packages"}"
+ 	: "${ARCHITECTURE:=amd64}"
+ 	: "${MIRROR_URL:="https://archive.ubuntu.com/ubuntu"}"
+-	: "${UBUNTU_RELEASE:=noble}" # Default to latest Ubuntu LTS, currently 24.04 Noble Numbat
++	: "${UBUNTU_RELEASE:=resolute}" # Default to latest Ubuntu LTS, currently 26.04 Resolute Raccoon
+ 
+ 	mkdir -p "$DESTINATION"
+ 
+--- a/packages/libxml2/build.sh	2026-08-10 20:57:23.315391008 -0500
++++ b/packages/libxml2/build.sh	2026-07-28 00:15:52.669060585 -0500
+@@ -3,6 +3,7 @@
+ TERMUX_PKG_LICENSE="MIT"
+ TERMUX_PKG_MAINTAINER="@termux"
+ TERMUX_PKG_VERSION="2.15.3"
++TERMUX_PKG_REVISION=2
+ TERMUX_PKG_SRCURL="https://download.gnome.org/sources/libxml2/${TERMUX_PKG_VERSION%.*}/libxml2-${TERMUX_PKG_VERSION}.tar.xz"
+ TERMUX_PKG_SHA256=78262a6e7ac170d6528ebfe2efccdf220191a5af6a6cd61ea4a9a9a5042c7a07
+ TERMUX_PKG_AUTO_UPDATE=true
+@@ -38,7 +39,8 @@
+ 
+ termux_step_host_build() {
+ 	if [[ "$TERMUX_ON_DEVICE_BUILD" == "false" ]]; then
+-		termux_download_ubuntu_packages doxygen libclang-cpp18 libclang1-18 libfmt9 libxapian30
++		# We need doxygen, other packages are it's dependencies
++		termux_download_ubuntu_packages doxygen libfmt10 libspdlog1.15 libxapian30
+ 	fi
+ }
+ 

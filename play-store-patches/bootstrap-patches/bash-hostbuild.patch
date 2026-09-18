@@ -1,0 +1,12 @@
+--- a/packages/bash/build.sh
++++ b/packages/bash/build.sh
+@@ -57,6 +63,9 @@ termux_step_pre_configure() {
+ 			"${PATCH_CHECKSUMS[$PATCH_NUM]}"
+ 		patch -p0 -i "$PATCHFILE"
+ 	done
++	# Bash tries to redefine bool keyword which breaks with GCC 15, so use Clang for
++	# build (the binaries that are run on the builder)
++	export CC_FOR_BUILD="clang-${TERMUX_HOST_LLVM_MAJOR_VERSION}"
+ }
+ 
+ termux_step_post_make_install() {

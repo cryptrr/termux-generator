@@ -1,0 +1,31 @@
+diff --git a/packages/golang/build.sh b/packages/golang/build.sh
+index 437c9e5f2d..ccc0de3580 100644
+--- a/packages/golang/build.sh
++++ b/packages/golang/build.sh
+@@ -2,9 +2,9 @@ TERMUX_PKG_HOMEPAGE=https://go.dev/
+ TERMUX_PKG_DESCRIPTION="Go programming language compiler"
+ TERMUX_PKG_LICENSE="BSD 3-Clause"
+ TERMUX_PKG_MAINTAINER="@termux"
+-TERMUX_PKG_VERSION="3:1.26.4"
++TERMUX_PKG_VERSION="3:1.26.5"
+ TERMUX_PKG_SRCURL=https://go.dev/dl/go${TERMUX_PKG_VERSION#*:}.src.tar.gz
+-TERMUX_PKG_SHA256=4f668a32fbfc1132e6a881fb968c2f1dada631492a339211735fbb255a42602d
++TERMUX_PKG_SHA256=495be4bc87176ac567392e5b4116abd98466d33d7b49d41e764ccc6976b2dc42
+ TERMUX_PKG_DEPENDS="clang"
+ TERMUX_PKG_ANTI_BUILD_DEPENDS="clang"
+ TERMUX_PKG_RECOMMENDS="resolv-conf"
+diff --git a/scripts/build/setup/termux_setup_golang.sh b/scripts/build/setup/termux_setup_golang.sh
+index aa6ecc6e1a..72d1f19022 100644
+--- a/scripts/build/setup/termux_setup_golang.sh
++++ b/scripts/build/setup/termux_setup_golang.sh
+@@ -3,8 +3,8 @@ termux_setup_golang() {
+ 	export GOPATH="${TERMUX_COMMON_CACHEDIR}/go-path" GOCACHE="${TERMUX_COMMON_CACHEDIR}/go-build"
+ 	mkdir -p "$GOPATH" "$GOCACHE"
+ 	if [ "$TERMUX_ON_DEVICE_BUILD" = "false" ]; then
+-		local TERMUX_GO_VERSION=go1.26.3
+-		local TERMUX_GO_SHA256=2b2cfc7148493da5e73981bffbf3353af381d5f93e789c82c79aff64962eb556
++		local TERMUX_GO_VERSION=go1.26.5
++		local TERMUX_GO_SHA256=5c2c3b16caefa1d968a94c1daca04a7ca301a496d9b086e17ad77bb81393f053
+ 		local TERMUX_GO_PLATFORM=linux-amd64
+ 
+ 		# Need to be on latest go version to avoid risk of newer go version in go.mod
