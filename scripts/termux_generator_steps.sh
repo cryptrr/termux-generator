@@ -98,6 +98,9 @@ patch_bootstraps() {
     fi
 
     apply_patches "$TERMUX_APP_TYPE-patches/bootstrap-patches" termux-packages-main
+    if [[ "$TERMUX_APP_TYPE" == "f-droid" ]]; then
+        install_termux_source_fallbacks "$TERMUX_GENERATOR_HOME" termux-packages-main
+    fi
 
     portable_sed_i -e "s|termux-package-builder|$TERMUX_GENERATOR_CONTAINER_NAME|g" termux-packages-main/scripts/run-docker.sh
 

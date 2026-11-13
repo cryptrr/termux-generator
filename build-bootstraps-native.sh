@@ -229,6 +229,7 @@ package_name=$TERMUX_APP__PACKAGE_NAME
 plugin=$TERMUX_GENERATOR_PLUGIN
 host_family=$host_distribution_family
 reproducible_native_flags=1
+bundled_dash_snapshot=1
 enable_ssh_server=$ENABLE_SSH_SERVER"
 
 prepare_checkout() {
@@ -269,6 +270,8 @@ prepare_checkout() {
         echo "[*] Applying $patch_name..."
         patch --batch --forward -d "$NATIVE_WORK_DIR" -p1 < "$patch_file"
     done < <(find "$SCRIPT_DIR/f-droid-patches/bootstrap-patches" -type f -name '*.patch' | sort)
+
+    install_termux_source_fallbacks "$SCRIPT_DIR" "$NATIVE_WORK_DIR"
 
     echo "[*] Applying native-host.patch..."
     patch --batch --forward -d "$NATIVE_WORK_DIR" -p1 \

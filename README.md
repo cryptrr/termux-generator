@@ -20,13 +20,12 @@ This script builds a [termux/termux-app](https://github.com/termux/termux-app) o
 
 <img width="1148" height="250" alt="image" src="https://github.com/user-attachments/assets/7bbc8338-1c9e-4a34-966f-87a65cadc471" />
 
-
 ## Building Termux locally
 
 ### Building bootstraps natively without Docker
 
 Bootstrap archives can be built directly on a dedicated Debian- or
-Ubuntu-family x86_64 host or CI runner, including derivatives such as Pop!_OS
+Ubuntu-family x86_64 host or CI runner, including derivatives such as Pop!\_OS
 when their base version is compatible. This path builds Termux packages from
 source and does not build the Android applications:
 
@@ -101,6 +100,7 @@ packages. For example, use `com.autopi`, `aarch64`, and
 - `bash`
 
 #### Common Dependencies
+
 ```bash
 sudo apt update
 sudo apt install -y git patch
@@ -129,7 +129,7 @@ sudo chown -R $(whoami) $ANDROID_SDK_ROOT
 yes | sdkmanager --licenses
 ```
 
-#### Docker 
+#### Docker
 
 > [!NOTE]
 > `docker.io` by Debian/Ubuntu or `docker-ce` by https://docker.com are both acceptable here. This example shows installing `docker.io` - to use Docker CE instead, visit the [docker.com docs for Docker CE](https://docs.docker.com/engine/install/)
@@ -164,10 +164,10 @@ cd termux-generator
 > [!IMPORTANT]
 > Running the command a second time will delete all the modified files and start over. Use `--dirty` if you are troubleshooting.
 
-
 #### Example: build Termux with SSH server enabled by default and install it through ADB
 
 > [!NOTE]
+>
 > - This technique can be used to bootstrap from ADB access into full SSH access through Termux, without any access to a display or touchscreen.
 > - This might be useful on devices that have **no screen or a broken screen**.
 > - If you install Termux:Boot or build with `--type play-store` (which comes with Termux:Boot already built into the same APK as the main Google Play Termux APK), then the SSH server will also autolaunch every time the device is first unlocked after rebooting.
@@ -194,7 +194,7 @@ passwd # change the default password
 
 > [!TIP]
 > `--type play-store` is compatible with Termux:X11, but unlike `--type f-droid`, it doesn't currently have a second-stage bootstrap, so if using `--type play-store` with XFCE, it might be necessary to run some commands to grant executable permission manually before launching XFCE, like these:
-> 
+>
 > ```
 > chmod +x $PREFIX/lib/xfce4/xfconf/xfconfd
 > chmod +x $PREFIX/lib/xfce4/session/xfsm-shutdown-helper

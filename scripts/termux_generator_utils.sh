@@ -20,6 +20,13 @@ apply_patches() {
     popd
 }
 
+install_termux_source_fallbacks() {
+    local generator_dir="$1" packages_dir="$2"
+    mkdir -p "$packages_dir/scripts/source-fallbacks" &&
+        cp -f "$generator_dir/scripts/source-fallbacks/dash-0.5.12.tar.gz" \
+            "$packages_dir/scripts/source-fallbacks/"
+}
+
 replace_termux_name() {
     if [[ "$TERMUX_APP__PACKAGE_NAME" == "com.termux" ]]; then
         return

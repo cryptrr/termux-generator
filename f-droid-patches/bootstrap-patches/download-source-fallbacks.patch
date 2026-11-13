@@ -1,8 +1,8 @@
 diff --git a/scripts/build/termux_download.sh b/scripts/build/termux_download.sh
-index b3205cd3da..1d69ad03a6 100755
+index b3205cd3da..d898d410a2 100755
 --- a/scripts/build/termux_download.sh
 +++ b/scripts/build/termux_download.sh
-@@ -8,6 +8,44 @@ termux_download() {
+@@ -8,6 +8,51 @@ termux_download() {
  	local URL="$1"
  	local DESTINATION="$2"
  	local CHECKSUM="${3:-SKIP_CHECKSUM}"
@@ -16,6 +16,13 @@ index b3205cd3da..1d69ad03a6 100755
 +	# Keep package recipes authoritative, but try an equivalent mirror after the
 +	# recipe URL and its normal retries have been exhausted.
 +	case "$URL" in
++		https://git.kernel.org/pub/scm/utils/dash/dash.git/snapshot/dash-0.5.12.tar.gz)
++			# Try the bundled copy of the exact snapshot before waiting for the network.
++			local snapshot="${BASH_SOURCE[0]%/*}/../source-fallbacks/dash-0.5.12.tar.gz"
++			if [[ -f "$snapshot" && -n "$CHECKSUM" && "$CHECKSUM" != "SKIP_CHECKSUM" ]]; then
++				URLS=("$snapshot" "${URLS[@]}")
++			fi
++			;;
 +		https://ftpmirror.gnu.org/gnu/*)
 +			URLS+=("https://ftp.gnu.org/gnu/${URL#https://ftpmirror.gnu.org/gnu/}")
 +			;;
@@ -47,7 +54,7 @@ index b3205cd3da..1d69ad03a6 100755
  
  	if [[ "$URL" =~ ^file://(/[^/]+)+$ ]]; then
  		local source="${URL:7}" # Remove `file://` prefix
-@@ -51,40 +89,47 @@ termux_download() {
+@@ -51,40 +96,49 @@ termux_download() {
  		CURL_OPTIONS+=(--no-progress-meter) # Don't print out transfer statistics
  	fi
  
@@ -72,7 +79,9 @@ index b3205cd3da..1d69ad03a6 100755
 +	for candidate in "${URLS[@]}"; do
 +		echo "Downloading ${candidate}"
 +		local error=0
-+		if ! curl "${CURL_OPTIONS[@]}" --output "$TMPFILE" "$candidate"; then
++		if [[ "$candidate" == "${snapshot-}" ]]; then
++			cp -- "$candidate" "$TMPFILE" || continue
++		elif ! curl "${CURL_OPTIONS[@]}" --output "$TMPFILE" "$candidate"; then
 +			error=1
 +			local retry=2
 +			local delay=60
