@@ -1,8 +1,8 @@
 diff --git a/scripts/build/termux_download.sh b/scripts/build/termux_download.sh
-index b3205cd3da..d898d410a2 100755
+index b3205cd3da..9613f2e3c8 100755
 --- a/scripts/build/termux_download.sh
 +++ b/scripts/build/termux_download.sh
-@@ -8,6 +8,51 @@ termux_download() {
+@@ -8,6 +8,54 @@ termux_download() {
  	local URL="$1"
  	local DESTINATION="$2"
  	local CHECKSUM="${3:-SKIP_CHECKSUM}"
@@ -35,6 +35,9 @@ index b3205cd3da..d898d410a2 100755
 +		https://www.gnu.org/software/*|http://www.gnu.org/software/*)
 +			URLS+=("https://ftp.gnu.org/gnu/${URL#*://www.gnu.org/software/}")
 +			;;
++		https://invisible-island.net/archives/dialog/dialog-*.tgz)
++			URLS+=("https://invisible-mirror.net/archives/dialog/${URL##*/}")
++			;;
 +		https://download.savannah.gnu.org/releases/*|http://download.savannah.gnu.org/releases/*)
 +			URLS+=("http://download-mirror.savannah.gnu.org/releases/${URL#*://download.savannah.gnu.org/releases/}")
 +			;;
@@ -54,7 +57,7 @@ index b3205cd3da..d898d410a2 100755
  
  	if [[ "$URL" =~ ^file://(/[^/]+)+$ ]]; then
  		local source="${URL:7}" # Remove `file://` prefix
-@@ -51,40 +96,49 @@ termux_download() {
+@@ -51,40 +99,49 @@ termux_download() {
  		CURL_OPTIONS+=(--no-progress-meter) # Don't print out transfer statistics
  	fi
  
